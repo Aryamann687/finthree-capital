@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { motion, animate } from 'framer-motion'
-import { Leaf } from "lucide-react"
 import {
   ArrowRight,
   Check,
   ChevronDown,
+  Leaf,
   Mail,
   MapPin,
   Menu,
@@ -218,7 +219,7 @@ export function FinthreeSite() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [expectedReturnInput, setExpectedReturnInput] = useState("12")
+  const [expectedReturnInput, setExpectedReturnInput] = useState(String(CALC_DEFAULTS.expectedReturn))
 
   // ---- Wealth Growth Calculator state ----
   const [monthlyInvestment, setMonthlyInvestment] = useState(CALC_DEFAULTS.monthlyInvestment)
@@ -232,7 +233,7 @@ export function FinthreeSite() {
 
   const monthlyInputRef = useRef<HTMLInputElement>(null)
 
-  const handleMonthlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMonthlyChange = (e: ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
     const caret = e.target.selectionStart ?? raw.length
     const digitsBeforeCaret = raw.slice(0, caret).replace(/[^\d]/g, '').length
@@ -338,12 +339,16 @@ export function FinthreeSite() {
 
   const gapVsSavings = Math.max(futureValueMF - futureValueSavings, 0)
   const compGapVsSavings = Math.max(compFutureValueMF - compFutureValueSavings, 0)
-  const insightMessage = `Investing ${formatINR(monthlyInvestment)} every month for ${years} year${
-    years === 1 ? '' : 's'
-  } at an assumed ${expectedReturn}% annual return could grow to roughly ${formatINR(
-    futureValueMF,
-    true,
-  )} — about ${formatINR(gapVsSavings, true)} more than keeping the same money in a regular savings account.`
+  const insightMessage = useMemo(
+    () =>
+      `Investing ${formatINR(monthlyInvestment)} every month for ${years} year${
+        years === 1 ? '' : 's'
+      } at an assumed ${expectedReturn}% annual return could grow to roughly ${formatINR(
+        futureValueMF,
+        true,
+      )} — about ${formatINR(gapVsSavings, true)} more than keeping the same money in a regular savings account.`,
+    [monthlyInvestment, years, expectedReturn, futureValueMF, gapVsSavings],
+  )
 
   const animatedTotalInvested = useAnimatedNumber(totalInvested)
   const animatedEstimatedReturns = useAnimatedNumber(estimatedReturns)
@@ -570,7 +575,7 @@ export function FinthreeSite() {
             </motion.p>
              
 
-            <motion.p
+            <motion.div
               className="font-display mt-8 max-w-2xl text-2xl italic leading-snug text-primary sm:text-3xl"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -582,7 +587,7 @@ export function FinthreeSite() {
   Your money needs a <span className="text-accent not-italic">plan</span> not just a product.
 </p>
              
-            </motion.p>
+            </motion.div>
 
             <motion.p
               className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground"
@@ -830,6 +835,7 @@ export function FinthreeSite() {
   min={1}
   max={30}
   step={0.5}
+  aria-label="Expected annual return percentage"
   onChange={(e) => {
     const value = e.target.value
     setExpectedReturnInput(value)
@@ -842,11 +848,7 @@ export function FinthreeSite() {
     }
   }}
   onBlur={() => {
-    if (expectedReturnInput === "") {
-      setExpectedReturnInput(expectedReturn.toString())
-    } else {
-      setExpectedReturnInput(expectedReturn.toString())
-    }
+    setExpectedReturnInput(expectedReturn.toString())
   }}
   className="w-16 bg-transparent text-right text-2xl font-bold text-primary outline-none"
 />
@@ -861,6 +863,7 @@ export function FinthreeSite() {
     step={0.5}
     value={expectedReturn}
     onChange={(e) => setExpectedReturn(Number(e.target.value))}
+    aria-label="Expected annual return slider"
     className="w-full accent-accent"
   />
 </div>
@@ -1309,10 +1312,18 @@ export function FinthreeSite() {
   text="finthreecapital@gmail.com"
 />
 
-<ContactItem 
+<ContactItem
   icon={Phone}
   label="Call us"
-  text={"+91 9621692197\n +91 9560632786\n +91 9927989881"}
+  text={
+    <>
+      +91 9621692197
+      <br />
+      +91 9560632786
+      <br />
+      +91 9927989881
+    </>
+  }
 />
                 </div>
               </motion.div>
@@ -1480,55 +1491,6 @@ function Feature({
    Wealth Growth Calculator — subcomponents
    ============================================================ */
 
-function CalcSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  formatValue,
-}: {
-  label: string
-  value: number
-  min: number
-  max: number
-  step: number
-  onChange: (v: number) => void
-  formatValue: (v: number) => string
-}) {
-  const percent = ((value - min) / (max - min)) * 100
-  return (
-    <div>
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <label className="text-xs font-bold uppercase tracking-[0.14em] text-primary/60">
-          {label}
-        </label>
-        <span className="font-display text-xl font-semibold text-primary tabular-nums">
-          {formatValue(value)}
-        </span>
-      </div>
-      <div className="relative flex h-6 items-center">
-        <div className="absolute inset-x-0 h-2 rounded-full bg-black/[0.07]" />
-        <div
-          className="absolute h-2 rounded-full bg-accent transition-[width] duration-200 ease-out"
-          style={{ width: `${percent}%` }}
-        />
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          aria-label={label}
-          className="ft-range relative z-10 h-2 w-full cursor-pointer"
-        />
-      </div>
-    </div>
-  )
-}
-
 function ResultCard({
   label,
   value,
@@ -1614,7 +1576,7 @@ function ContactItem({
 }: {
   icon: typeof MapPin
   label: string
-  text: React.ReactNode
+  text: ReactNode
 }) {
   return (
     <div className="flex gap-4">
