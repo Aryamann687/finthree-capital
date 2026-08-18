@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, ReactNode } from 'react'
+import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { motion, animate } from 'framer-motion'
+import emailjs from "@emailjs/browser";
 import {
   ArrowRight,
   Check,
@@ -232,6 +233,43 @@ export function FinthreeSite() {
   const [comparisonYears, setComparisonYears] = useState<number>(DEFAULT_COMPARISON_YEARS)
 
   const monthlyInputRef = useRef<HTMLInputElement>(null)
+const [formData, setFormData] = useState({
+  name: "",
+  email: "",
+  phone: "",
+  message: "",
+});
+const [sending, setSending] = useState(false)
+
+const handleFormFieldChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const { name, value } = e.target
+  setFormData((prev) => ({ ...prev, [name]: value }))
+}
+
+const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault()
+  setSending(true)
+  try {
+    await emailjs.send(
+      process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID as string,
+      process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID as string,
+      {
+        from_name: formData.name,
+        from_email: formData.email,
+        phone: formData.phone,
+        message: formData.message,
+      },
+      process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY as string,
+    )
+    setSubmitted(true)
+    setFormData({ name: '', email: '', phone: '', message: '' })
+  } catch (error) {
+    console.error('EmailJS send failed:', error)
+    alert('Sorry, something went wrong while sending your message. Please try again or contact us directly.')
+  } finally {
+    setSending(false)
+  }
+}
 
   const handleMonthlyChange = (e: ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
@@ -481,6 +519,7 @@ export function FinthreeSite() {
     <button
       className="rounded-md p-2 text-primary md:hidden"
       aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+      aria-expanded={menuOpen}
       onClick={() => setMenuOpen(!menuOpen)}
     >
       {menuOpen ? <X /> : <Menu />}
@@ -553,7 +592,7 @@ export function FinthreeSite() {
               variants={brandContainer}
               initial="hidden"
               animate="show"
-              className="flex flex-wrap justify-center font-display text-5xl font-semibold leading-[1.05] tracking-tight text-primary sm:text-6xl lg:text-7xl"
+              className="flex flex-wrap justify-center font-display text-4xl font-semibold leading-[1.05] tracking-tight text-primary sm:text-6xl lg:text-7xl"
             >
               {'Finthree Capital'.split('').map((letter, index) => (
                 <motion.span key={index} variants={letterAnimation}>
@@ -581,7 +620,7 @@ export function FinthreeSite() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 2.15, duration: 0.7 }}
             >
-      <p className="mt-10 text-3xl font-bold tracking-tight text-primary sm:text-2xl">
+      <p className="mt-10 text-3xl font-bold tracking-tight text-primary sm:text-4xl">
   <span className="not-italic font-bold text-primary">Because</span>
   <br />
   Your money needs a <span className="text-accent not-italic">plan</span> not just a product.
@@ -618,15 +657,6 @@ export function FinthreeSite() {
               >
                 Explore Services
               </button>
-            </motion.div>
-
-            <motion.div
-              className="mt-12 flex items-center gap-3 text-sm text-muted-foreground"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 3.1, duration: 0.5 }}
-            >
-             
             </motion.div>
           </div>
         </section>
@@ -734,7 +764,7 @@ export function FinthreeSite() {
               <motion.article
                 key={short}
                 variants={fadeUp}
-                className="group relative overflow-hidden rounded-3xl border border-border bg-card p-7 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-2xl hover:shadow-primary/[0.08]"
+                className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card p-7 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-2xl hover:shadow-primary/[0.08]"
               >
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.05] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="relative flex size-12 items-center justify-center rounded-xl bg-accent/15 text-accent transition-transform duration-500 group-hover:scale-110">
@@ -747,7 +777,7 @@ export function FinthreeSite() {
                 <p className="relative mt-4 leading-7 text-muted-foreground">{text}</p>
                 <button
                   onClick={() => scrollTo('contact')}
-                  className="relative mt-7 inline-flex items-center gap-2 text-sm font-bold text-primary transition-colors group-hover:text-accent"
+                  className="relative mt-auto inline-flex items-center gap-2 pt-7 text-sm font-bold text-primary transition-colors group-hover:text-accent"
                 >
                   Learn more
                   <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -850,7 +880,7 @@ export function FinthreeSite() {
   onBlur={() => {
     setExpectedReturnInput(expectedReturn.toString())
   }}
-  className="w-16 bg-transparent text-right text-2xl font-bold text-primary outline-none"
+  className="w-14 min-w-0 bg-transparent text-right text-2xl font-bold text-primary outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 />
       <span className="text-sm text-muted-foreground">%</span>
     </div>
@@ -883,7 +913,7 @@ export function FinthreeSite() {
           setYears(Math.min(40, Math.max(1, Number(e.target.value) || 1)))
         }
         aria-label="Investment period in years"
-        className="w-16 bg-transparent text-2xl font-bold tabular-nums text-primary outline-none"
+        className="w-14 min-w-0 bg-transparent text-2xl font-bold tabular-nums text-primary outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
       <span className="text-sm font-medium text-muted-foreground">
         {years === 1 ? 'Year' : 'Years'}
@@ -1091,7 +1121,8 @@ export function FinthreeSite() {
                     <BarChart data={comparisonBars} margin={{ top: 24, right: 12, left: 0, bottom: 0 }} barCategoryGap="24%">
                       <XAxis
                         dataKey="label"
-                        tick={{ fontSize: 12, fill: '#8A8578', fontWeight: 600 }}
+                        tick={{ fontSize: 11, fill: '#8A8578', fontWeight: 600 }}
+                        interval={0}
                         axisLine={false}
                         tickLine={false}
                       />
@@ -1248,17 +1279,6 @@ export function FinthreeSite() {
   ))}
 </ul>
             </motion.div>
-
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.4 }}
-              className="relative"
-            >
-              
-             
-            </motion.div>
           </div>
         </section>
 
@@ -1334,10 +1354,7 @@ export function FinthreeSite() {
                 whileInView="show"
                 viewport={{ once: true, amount: 0.3 }}
                 className="rounded-3xl border border-border bg-card p-8 shadow-sm sm:p-10"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  setSubmitted(true)
-                }}
+                onSubmit={handleSubmit}
               >
                 <h3 className="font-display text-2xl font-semibold text-primary">
                   Send us a message
@@ -1356,6 +1373,9 @@ export function FinthreeSite() {
                       Full name
                       <input
                         required
+                        name="name"
+                        value={formData.name}
+                        onChange={handleFormFieldChange}
                         className="rounded-xl border border-input bg-background px-4 py-3 text-base font-normal normal-case tracking-normal text-foreground outline-none transition-all duration-200 focus:border-accent focus:ring-2 focus:ring-accent/30"
                         placeholder="Your name"
                       />
@@ -1365,8 +1385,23 @@ export function FinthreeSite() {
                       <input
                         required
                         type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleFormFieldChange}
                         className="rounded-xl border border-input bg-background px-4 py-3 text-base font-normal normal-case tracking-normal text-foreground outline-none transition-all duration-200 focus:border-accent focus:ring-2 focus:ring-accent/30"
                         placeholder="you@example.com"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-[0.12em] text-primary">
+                      Phone Number
+                      <input
+                        required
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleFormFieldChange}
+                        className="rounded-xl border border-input bg-background px-4 py-3 text-base font-normal normal-case tracking-normal text-foreground outline-none transition-all duration-200 focus:border-accent focus:ring-2 focus:ring-accent/30"
+                        placeholder="+91 9876543210"
                       />
                     </label>
                     <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-[0.12em] text-primary">
@@ -1374,11 +1409,19 @@ export function FinthreeSite() {
                       <textarea
                         required
                         rows={4}
+                        name="message"
+                        value={formData.message}
+                        onChange={handleFormFieldChange}
                         className="resize-none rounded-xl border border-input bg-background px-4 py-3 text-base font-normal normal-case tracking-normal text-foreground outline-none transition-all duration-200 focus:border-accent focus:ring-2 focus:ring-accent/30"
                         placeholder="Tell us about your investment goals..."
                       />
                     </label>
-                    <button className="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3.5 font-bold text-accent-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30">
+                    <button
+                      type="submit"
+                      disabled={sending}
+                      aria-busy={sending}
+                      className="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3.5 font-bold text-accent-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30"
+                    >
                       Request a consultation
                       <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
                     </button>
@@ -1585,7 +1628,7 @@ function ContactItem({
       </div>
       <div>
         <p className="font-bold capitalize">{label}</p>
-        <p className="mt-2 text-sm leading-6 text-primary-foreground/70">{text}</p>
+        <p className="mt-2 break-words text-sm leading-6 text-primary-foreground/70">{text}</p>
       </div>
     </div>
   )
