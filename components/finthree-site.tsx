@@ -1,9 +1,8 @@
 'use client'
-
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { MessageCircle } from 'lucide-react'
-import { motion, animate } from 'framer-motion'
+import { motion } from 'framer-motion'
 import emailjs from "@emailjs/browser";
 import {
   ArrowRight,
@@ -165,6 +164,32 @@ function sipFutureValue(monthlyAmount: number, annualRatePct: number, years: num
   return monthlyAmount * ((Math.pow(1 + i, months) - 1) / i) * (1 + i)
 }
 
+
+/** Future value of a one-time investment compounded annually. */
+function lumpsumFutureValue(amount: number, annualRatePct: number, years: number) {
+  return amount * Math.pow(1 + annualRatePct / 100, years)
+}
+
+/**
+ * Step-up SIP projection. The SIP increases at the start of every investment year.
+ * Contributions follow the same beginning-of-period convention as the existing SIP formula.
+ */
+function stepUpSipProjection(initialMonthlyAmount: number, annualStepUpPct: number, annualRatePct: number, years: number) {
+  const months = Math.round(years * 12)
+  const monthlyRate = annualRatePct / 100 / 12
+  let invested = 0
+  let totalValue = 0
+
+  for (let month = 0; month < months; month++) {
+    const investmentYear = Math.floor(month / 12)
+    const contribution = initialMonthlyAmount * Math.pow(1 + annualStepUpPct / 100, investmentYear)
+    invested += contribution
+    totalValue += contribution * Math.pow(1 + monthlyRate, months - month)
+  }
+
+  return { invested, totalValue, estimatedReturns: Math.max(totalValue - invested, 0) }
+}
+
 /** Year-by-year projection (year 0..years) for a monthly SIP at a given rate. */
 function buildGrowthSeries(monthlyAmount: number, annualRatePct: number, years: number) {
   const series: number[] = []
@@ -197,47 +222,35 @@ function formatYearLabel(year: number) {
   return `Yr ${year}`
 }
 
-/** Smoothly tweens a displayed number toward `value` whenever it changes. */
-function useAnimatedNumber(value: number, duration = 0.7) {
-  const [display, setDisplay] = useState(value)
-  const prevRef = useRef(value)
-
-  useEffect(() => {
-    const controls = animate(prevRef.current, value, {
-      duration,
-      ease: 'easeOut',
-      onUpdate: (v) => setDisplay(v),
-    })
-    prevRef.current = value
-    return () => controls.stop()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value])
-
-  return display
-}
-
 export function FinthreeSite() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [expectedReturnInput, setExpectedReturnInput] = useState(String(CALC_DEFAULTS.expectedReturn))
-
-  // ---- Wealth Growth Calculator state ----
+  // ---- Financial Calculator Hub state ----
+  // One numeric source of truth per control keeps each slider and input synchronized.
+  const [activeCalculator, setActiveCalculator] = useState<'sip' | 'lumpsum' | 'stepup'>('sip')
   const [monthlyInvestment, setMonthlyInvestment] = useState(CALC_DEFAULTS.monthlyInvestment)
-  const [monthlyDraft, setMonthlyDraft] = useState(String(CALC_DEFAULTS.monthlyInvestment))
   const [expectedReturn, setExpectedReturn] = useState(CALC_DEFAULTS.expectedReturn)
   const [years, setYears] = useState(CALC_DEFAULTS.years)
+  const [lumpsumInvestment, setLumpsumInvestment] = useState(500000)
+  const [lumpsumReturn, setLumpsumReturn] = useState(CALC_DEFAULTS.expectedReturn)
+  const [lumpsumYears, setLumpsumYears] = useState(CALC_DEFAULTS.years)
+  const [stepUpMonthlyInvestment, setStepUpMonthlyInvestment] = useState(CALC_DEFAULTS.monthlyInvestment)
+  const [stepUpRate, setStepUpRate] = useState(10)
+  const [stepUpReturn, setStepUpReturn] = useState(CALC_DEFAULTS.expectedReturn)
+  const [stepUpYears, setStepUpYears] = useState(CALC_DEFAULTS.years)
   const [compareTab, setCompareTab] = useState<'mf' | 'fd' | 'ppf' | 'savings'>('mf')
   // Comparison charts always project across a fixed horizon, selectable via
   // the timeline buttons — independent of the calculator's own period above.
   const [comparisonYears, setComparisonYears] = useState<number>(DEFAULT_COMPARISON_YEARS)
 
-  const monthlyInputRef = useRef<HTMLInputElement>(null)
-const [formData, setFormData] = useState({
-  name: "",
-  email: "",
-  phone: "",
-  message: "",
+  // Keep the primary calculator controls and summary immediate while allowing
+  // heavier comparison charts lower on the page to update at a lower priority.
+  const deferredMonthlyInvestment = useDeferredValue(monthlyInvestment)
+  const deferredExpectedReturn = useDeferredValue(expectedReturn)
+
+  const [formData, setFormData] = useState({
+  name: "", email: "", phone: "", message: "",
 });
 const [sending, setSending] = useState(false)
 
@@ -250,58 +263,22 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
   e.preventDefault()
   setSending(true)
   try {
-    await emailjs.send(
-      process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID as string,
-      process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID as string,
-      {
-        from_name: formData.name,
-        from_email: formData.email,
-        phone: formData.phone,
-        message: formData.message,
-      },
-      process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY as string,
-    )
+    await emailjs.send(process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID as string, process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID as string, {
+      from_name: formData.name, from_email: formData.email, phone: formData.phone, message: formData.message,
+    }, process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY as string)
     setSubmitted(true)
     setFormData({ name: '', email: '', phone: '', message: '' })
   } catch (error) {
     console.error('EmailJS send failed:', error)
     alert('Sorry, something went wrong while sending your message. Please try again or contact us directly.')
-  } finally {
-    setSending(false)
-  }
+  } finally { setSending(false) }
 }
 
-  const handleMonthlyChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value
-    const caret = e.target.selectionStart ?? raw.length
-    const digitsBeforeCaret = raw.slice(0, caret).replace(/[^\d]/g, '').length
-    const digits = raw.replace(/[^\d]/g, '').slice(0, 6)
-    setMonthlyDraft(digits)
-    setMonthlyInvestment(digits === '' ? 0 : parseInt(digits, 10))
-
-    // Restore the caret to sit after the same digit it followed pre-format,
-    // so typing in the middle of the number doesn't jump to the end.
-    requestAnimationFrame(() => {
-      const input = monthlyInputRef.current
-      if (!input) return
-      const formatted = digits === '' ? '' : formatIndianDigits(Number(digits))
-      let seen = 0
-      let pos = formatted.length
-      for (let i = 0; i < formatted.length; i++) {
-        if (/\d/.test(formatted[i])) seen++
-        if (seen === digitsBeforeCaret) {
-          pos = i + 1
-          break
-        }
-      }
-      input.setSelectionRange(pos, pos)
-    })
-  }
-  const handleMonthlyBlur = () => {
-    const clamped = Math.min(100000, Math.max(500, Math.round((monthlyInvestment || 500) / 500) * 500))
-    setMonthlyInvestment(clamped)
-    setMonthlyDraft(String(clamped))
-  }
+  const clampMonthlyInvestment = (value: number) => Math.min(100000, Math.max(500, Math.round(value / 500) * 500))
+  const clampExpectedReturn = (value: number) => Math.min(30, Math.max(1, Math.round(value * 10) / 10))
+  const clampYears = (value: number) => Math.min(40, Math.max(1, Math.round(value)))
+  const clampLumpsumInvestment = (value: number) => Math.min(10000000, Math.max(10000, Math.round(value / 10000) * 10000))
+  const clampStepUpRate = (value: number) => Math.min(30, Math.max(0, Math.round(value * 10) / 10))
 
   const totalInvested = useMemo(
     () => monthlyInvestment * years * 12,
@@ -315,6 +292,44 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     () => Math.max(futureValueMF - totalInvested, 0),
     [futureValueMF, totalInvested],
   )
+  const yearlyProjection = useMemo(
+    () => Array.from({ length: years }, (_, index) => {
+      const year = index + 1
+      const invested = monthlyInvestment * year * 12
+      const totalValue = sipFutureValue(monthlyInvestment, expectedReturn, year)
+      return { year, invested, estimatedReturns: Math.max(totalValue - invested, 0), totalValue }
+    }),
+    [monthlyInvestment, expectedReturn, years],
+  )
+  const lumpsumFutureValueTotal = useMemo(
+    () => lumpsumFutureValue(lumpsumInvestment, lumpsumReturn, lumpsumYears),
+    [lumpsumInvestment, lumpsumReturn, lumpsumYears],
+  )
+  const lumpsumEstimatedReturns = useMemo(
+    () => Math.max(lumpsumFutureValueTotal - lumpsumInvestment, 0),
+    [lumpsumFutureValueTotal, lumpsumInvestment],
+  )
+  const lumpsumProjection = useMemo(
+    () => Array.from({ length: lumpsumYears }, (_, index) => {
+      const year = index + 1
+      const totalValue = lumpsumFutureValue(lumpsumInvestment, lumpsumReturn, year)
+      return { year, invested: lumpsumInvestment, estimatedReturns: Math.max(totalValue - lumpsumInvestment, 0), totalValue }
+    }),
+    [lumpsumInvestment, lumpsumReturn, lumpsumYears],
+  )
+  const stepUpProjectionFinal = useMemo(
+    () => stepUpSipProjection(stepUpMonthlyInvestment, stepUpRate, stepUpReturn, stepUpYears),
+    [stepUpMonthlyInvestment, stepUpRate, stepUpReturn, stepUpYears],
+  )
+  const stepUpYearlyProjection = useMemo(
+    () => Array.from({ length: stepUpYears }, (_, index) => {
+      const year = index + 1
+      const projection = stepUpSipProjection(stepUpMonthlyInvestment, stepUpRate, stepUpReturn, year)
+      return { year, ...projection }
+    }),
+    [stepUpMonthlyInvestment, stepUpRate, stepUpReturn, stepUpYears],
+  )
+
   // Savings figure at the calculator's own period — feeds the top insight
   // sentence only; the comparison charts below use the fixed horizon instead.
   const futureValueSavings = useMemo(
@@ -324,27 +339,27 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
 
   // ---- Fixed-horizon comparison figures (drive charts, tabs & highlight card) ----
   const compFutureValueMF = useMemo(
-    () => sipFutureValue(monthlyInvestment, expectedReturn, comparisonYears),
-    [monthlyInvestment, expectedReturn, comparisonYears],
+    () => sipFutureValue(deferredMonthlyInvestment, deferredExpectedReturn, comparisonYears),
+    [deferredMonthlyInvestment, deferredExpectedReturn, comparisonYears],
   )
   const compFutureValueFD = useMemo(
-    () => sipFutureValue(monthlyInvestment, FD_RATE, comparisonYears),
-    [monthlyInvestment, comparisonYears],
+    () => sipFutureValue(deferredMonthlyInvestment, FD_RATE, comparisonYears),
+    [deferredMonthlyInvestment, comparisonYears],
   )
   const compFutureValuePPF = useMemo(
-    () => sipFutureValue(monthlyInvestment, PPF_RATE, comparisonYears),
-    [monthlyInvestment, comparisonYears],
+    () => sipFutureValue(deferredMonthlyInvestment, PPF_RATE, comparisonYears),
+    [deferredMonthlyInvestment, comparisonYears],
   )
   const compFutureValueSavings = useMemo(
-    () => sipFutureValue(monthlyInvestment, SAVINGS_RATE, comparisonYears),
-    [monthlyInvestment, comparisonYears],
+    () => sipFutureValue(deferredMonthlyInvestment, SAVINGS_RATE, comparisonYears),
+    [deferredMonthlyInvestment, comparisonYears],
   )
 
   const growthSeries = useMemo(() => {
-    const mf = buildGrowthSeries(monthlyInvestment, expectedReturn, comparisonYears)
-    const fd = buildGrowthSeries(monthlyInvestment, FD_RATE, comparisonYears)
-    const ppf = buildGrowthSeries(monthlyInvestment, PPF_RATE, comparisonYears)
-    const savings = buildGrowthSeries(monthlyInvestment, SAVINGS_RATE, comparisonYears)
+    const mf = buildGrowthSeries(deferredMonthlyInvestment, deferredExpectedReturn, comparisonYears)
+    const fd = buildGrowthSeries(deferredMonthlyInvestment, FD_RATE, comparisonYears)
+    const ppf = buildGrowthSeries(deferredMonthlyInvestment, PPF_RATE, comparisonYears)
+    const savings = buildGrowthSeries(deferredMonthlyInvestment, SAVINGS_RATE, comparisonYears)
     // Sample at most ~12 points so the chart stays crisp on long horizons
     const step = Math.max(1, Math.ceil(comparisonYears / 12))
     const points: { year: number; mf: number; fd: number; ppf: number; savings: number }[] = []
@@ -361,16 +376,16 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       })
     }
     return points
-  }, [monthlyInvestment, expectedReturn, comparisonYears])
+  }, [deferredMonthlyInvestment, deferredExpectedReturn, comparisonYears])
 
   const comparisonBars = useMemo(
     () => [
-      { key: 'mf', label: 'Mutual Fund', rate: expectedReturn, value: compFutureValueMF, color: CHART_COLORS.mutualFund },
+      { key: 'mf', label: 'Mutual Fund', rate: deferredExpectedReturn, value: compFutureValueMF, color: CHART_COLORS.mutualFund },
       { key: 'fd', label: 'Fixed Deposit', rate: FD_RATE, value: compFutureValueFD, color: CHART_COLORS.fd },
       { key: 'ppf', label: 'PPF', rate: PPF_RATE, value: compFutureValuePPF, color: CHART_COLORS.ppf },
       { key: 'savings', label: 'Savings', rate: SAVINGS_RATE, value: compFutureValueSavings, color: CHART_COLORS.savings },
     ],
-    [expectedReturn, compFutureValueMF, compFutureValueFD, compFutureValuePPF, compFutureValueSavings],
+    [deferredExpectedReturn, compFutureValueMF, compFutureValueFD, compFutureValuePPF, compFutureValueSavings],
   )
 
   const activeComparison = comparisonBars.find((b) => b.key === compareTab) ?? comparisonBars[0]
@@ -388,16 +403,6 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     [monthlyInvestment, years, expectedReturn, futureValueMF, gapVsSavings],
   )
 
-  const animatedTotalInvested = useAnimatedNumber(totalInvested)
-  const animatedEstimatedReturns = useAnimatedNumber(estimatedReturns)
-  const animatedFutureValue = useAnimatedNumber(futureValueMF)
-
-  // Animated counters for the fixed-horizon highlight card (Feature 6)
-  const animatedCompMF = useAnimatedNumber(compFutureValueMF)
-  const animatedCompPPF = useAnimatedNumber(compFutureValuePPF)
-  const animatedCompFD = useAnimatedNumber(compFutureValueFD)
-  const animatedCompSavings = useAnimatedNumber(compFutureValueSavings)
-  const animatedCompGap = useAnimatedNumber(compGapVsSavings)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12)
@@ -420,14 +425,19 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         .font-display { font-family: 'Fraunces', ui-serif, Georgia, serif; }
         .font-body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
 
-        /* Wealth calculator slider — transparent native track, custom gold thumb */
+        /* Wealth calculator slider — visible gold progress track + navy/cream remainder */
         .ft-range {
           -webkit-appearance: none;
           appearance: none;
-          background: transparent;
+          width: 100%;
+          height: 10px;
+          border-radius: 9999px;
+          outline: none;
+          cursor: pointer;
+          background-color: #E5E1D8;
         }
-        .ft-range::-webkit-slider-runnable-track { background: transparent; }
-        .ft-range::-moz-range-track { background: transparent; border: none; }
+        .ft-range::-webkit-slider-runnable-track { height: 10px; border-radius: 9999px; background: transparent; }
+        .ft-range::-moz-range-track { height: 10px; border: none; border-radius: 9999px; background: transparent; }
         .ft-range::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
@@ -437,7 +447,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
           background: #C9A227;
           border: 3px solid #ffffff;
           box-shadow: 0 2px 6px rgba(11, 31, 58, 0.3), 0 0 0 1px rgba(201,162,39,0.25), 0 0 0 8px rgba(201,162,39,0.12);
-          margin-top: 0px;
+          margin-top: -7px;
           cursor: pointer;
           transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease;
         }
@@ -787,7 +797,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
           </motion.div>
         </section>
 
-        {/* ---------------- Wealth Growth Calculator ---------------- */}
+        {/* ---------------- Financial Calculator Hub ---------------- */}
         <section id="calculator" className="relative overflow-hidden bg-secondary/40 px-5 py-24 lg:px-8 lg:py-32">
           <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -top-20 left-1/4 size-[360px] rounded-full bg-accent/[0.06] blur-3xl" />
@@ -795,150 +805,74 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
           </div>
 
           <div className="relative mx-auto max-w-7xl">
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.4 }}
-              className="mx-auto max-w-2xl text-center"
-            >
-              <p className="text-sm font-bold uppercase tracking-[0.22em] text-accent">
-                Plan with clarity
-              </p>
-              <h2 className="font-display mt-4 text-4xl font-semibold tracking-tight text-primary sm:text-5xl">
-                Wealth Growth Calculator
-              </h2>
-              <p className="mt-5 text-lg leading-8 text-muted-foreground">
-                See how disciplined investing can grow your wealth over time through
-                interactive projections.
-              </p>
+            <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-bold uppercase tracking-[0.22em] text-accent">Plan with clarity</p>
+              <h2 className="font-display mt-4 text-4xl font-semibold tracking-tight text-primary sm:text-5xl">Financial Calculators</h2>
+              <p className="mt-5 text-lg leading-8 text-muted-foreground">Explore SIP, one-time investment and step-up SIP projections with interactive estimates.</p>
             </motion.div>
 
-            {/* ---- SIP Calculator ---- */}
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.2 }}
-              className="mt-14 grid gap-8 rounded-[2rem] border border-border bg-card p-6 shadow-xl shadow-primary/[0.06] sm:p-8 lg:grid-cols-[1fr_0.9fr] lg:p-10"
-            >
-              {/* Inputs */}
-<div className="flex flex-col justify-center gap-9">
-  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-accent">
-    <Sparkles className="size-3.5" />
-    Illustrative Estimate
-  </div>
+            <div role="tablist" aria-label="Financial calculator selector" className="mt-10 grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm sm:mx-auto sm:max-w-xl">
+              {[
+                ['sip', 'SIP'],
+                ['lumpsum', 'Lumpsum'],
+                ['stepup', 'Step-up SIP'],
+              ].map(([key, label]) => (
+                <button key={key} type="button" role="tab" aria-selected={activeCalculator === key} onClick={() => setActiveCalculator(key as 'sip' | 'lumpsum' | 'stepup')} className={`min-w-0 rounded-xl px-2 py-3 text-xs font-bold transition-colors sm:px-4 sm:text-sm ${activeCalculator === key ? 'bg-accent text-accent-foreground shadow-sm' : 'text-primary/70 hover:bg-secondary hover:text-primary'}`}>
+                  <span className="block truncate">{label}</span>
+                </button>
+              ))}
+            </div>
 
-  {/* Monthly SIP — premium amount input, no slider */}
-  <div className="space-y-3">
-    <label className="text-sm font-bold uppercase tracking-[0.22em] text-muted-foreground">
-      Monthly SIP
-    </label>
-    <div className="ft-input-shell flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-3.5 shadow-sm">
-      <span className="text-xl font-bold text-primary/50">₹</span>
-      <input
-        ref={monthlyInputRef}
-        type="text"
-        inputMode="numeric"
-        value={monthlyDraft === '' ? '' : formatIndianDigits(Number(monthlyDraft))}
-        onChange={handleMonthlyChange}
-        onBlur={handleMonthlyBlur}
-        aria-label="Monthly SIP amount in rupees"
-        placeholder="10,000"
-        className="w-full min-w-0 bg-transparent text-2xl font-bold tabular-nums text-primary outline-none placeholder:text-primary/30"
-      />
-    </div>
-    <p className="text-xs text-muted-foreground">₹500 – ₹1,00,000, in steps of ₹500</p>
-  </div>
+            {activeCalculator === 'sip' && (
+              <>
+                <motion.div key="sip" variants={fadeUp} initial="hidden" animate="show" className="mt-8 grid min-w-0 gap-8 rounded-[2rem] border border-border bg-card p-5 shadow-xl shadow-primary/[0.06] sm:p-8 lg:grid-cols-[1fr_0.9fr] lg:p-10">
+                  <div className="flex min-w-0 flex-col justify-center gap-8">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-accent"><Sparkles className="size-3.5" />Illustrative Estimate</div>
+                    <CalculatorControl id="monthly-sip" label="Monthly SIP" minLabel="₹500" maxLabel="₹1,00,000" min={500} max={100000} step={500} value={monthlyInvestment} onChange={(value) => setMonthlyInvestment(clampMonthlyInvestment(value))} prefix="₹" inputMode="numeric" />
+                    <CalculatorControl id="expected-return" label="Expected Annual Return" minLabel="1%" maxLabel="30%" min={1} max={30} step={0.1} value={expectedReturn} onChange={(value) => setExpectedReturn(clampExpectedReturn(value))} suffix="%" inputMode="decimal" />
+                    <CalculatorControl id="investment-period" label="Investment Period" minLabel="1 year" maxLabel="40 years" min={1} max={40} step={1} value={years} onChange={(value) => setYears(clampYears(value))} suffix="Years" inputMode="numeric" />
+                  </div>
+                  <ProjectionSummary title={`Your projection over ${years} ${years === 1 ? 'year' : 'years'}`} invested={totalInvested} returns={estimatedReturns} total={futureValueMF} footer={`Based on ${formatINR(monthlyInvestment)}/month at an assumed ${expectedReturn}% annual return.`} />
+                </motion.div>
+                <ProjectionChart title="SIP growth projection" data={yearlyProjection.map((row) => ({ year: row.year, value: row.totalValue }))} />
+                <ProjectionBreakdown title="View your SIP projection, year by year" rows={yearlyProjection} />
+              </>
+            )}
 
-  {/* ROI - keep existing premium slider */}
-  <div className="space-y-4">
-  <div className="flex items-center justify-between">
-    <label className="text-sm font-bold uppercase tracking-[0.22em] text-muted-foreground">
-      Expected Annual Return
-    </label>
+            {activeCalculator === 'lumpsum' && (
+              <>
+                <motion.div key="lumpsum" variants={fadeUp} initial="hidden" animate="show" className="mt-8 grid min-w-0 gap-8 rounded-[2rem] border border-border bg-card p-5 shadow-xl shadow-primary/[0.06] sm:p-8 lg:grid-cols-[1fr_0.9fr] lg:p-10">
+                  <div className="flex min-w-0 flex-col justify-center gap-8">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-accent"><Sparkles className="size-3.5" />Illustrative Estimate</div>
+                    <CalculatorControl id="lumpsum-investment" label="Investment Amount" minLabel="₹10,000" maxLabel="₹1 Cr" min={10000} max={10000000} step={10000} value={lumpsumInvestment} onChange={(value) => setLumpsumInvestment(clampLumpsumInvestment(value))} prefix="₹" inputMode="numeric" />
+                    <CalculatorControl id="lumpsum-return" label="Expected Annual Return" minLabel="1%" maxLabel="30%" min={1} max={30} step={0.1} value={lumpsumReturn} onChange={(value) => setLumpsumReturn(clampExpectedReturn(value))} suffix="%" inputMode="decimal" />
+                    <CalculatorControl id="lumpsum-period" label="Investment Period" minLabel="1 year" maxLabel="40 years" min={1} max={40} step={1} value={lumpsumYears} onChange={(value) => setLumpsumYears(clampYears(value))} suffix="Years" inputMode="numeric" />
+                  </div>
+                  <ProjectionSummary title={`Your projection over ${lumpsumYears} ${lumpsumYears === 1 ? 'year' : 'years'}`} invested={lumpsumInvestment} returns={lumpsumEstimatedReturns} total={lumpsumFutureValueTotal} footer={`Based on a one-time investment of ${formatINR(lumpsumInvestment)} at an assumed ${lumpsumReturn}% annual return.`} />
+                </motion.div>
+                <ProjectionChart title="Lumpsum growth projection" data={lumpsumProjection.map((row) => ({ year: row.year, value: row.totalValue }))} />
+                <ProjectionBreakdown title="View your Lumpsum projection, year by year" rows={lumpsumProjection} />
+              </>
+            )}
 
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 shadow-sm transition-all focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
-     <input
-  type="number"
-  value={expectedReturnInput}
-  min={1}
-  max={30}
-  step={0.5}
-  aria-label="Expected annual return percentage"
-  onChange={(e) => {
-    const value = e.target.value
-    setExpectedReturnInput(value)
+            {activeCalculator === 'stepup' && (
+              <>
+                <motion.div key="stepup" variants={fadeUp} initial="hidden" animate="show" className="mt-8 grid min-w-0 gap-8 rounded-[2rem] border border-border bg-card p-5 shadow-xl shadow-primary/[0.06] sm:p-8 lg:grid-cols-[1fr_0.9fr] lg:p-10">
+                  <div className="flex min-w-0 flex-col justify-center gap-8">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-accent"><Sparkles className="size-3.5" />Illustrative Estimate</div>
+                    <CalculatorControl id="stepup-sip" label="Initial Monthly SIP" minLabel="₹500" maxLabel="₹1,00,000" min={500} max={100000} step={500} value={stepUpMonthlyInvestment} onChange={(value) => setStepUpMonthlyInvestment(clampMonthlyInvestment(value))} prefix="₹" inputMode="numeric" />
+                    <CalculatorControl id="stepup-rate" label="Annual SIP Increase" minLabel="0%" maxLabel="30%" min={0} max={30} step={0.1} value={stepUpRate} onChange={(value) => setStepUpRate(clampStepUpRate(value))} suffix="%" inputMode="decimal" />
+                    <CalculatorControl id="stepup-return" label="Expected Annual Return" minLabel="1%" maxLabel="30%" min={1} max={30} step={0.1} value={stepUpReturn} onChange={(value) => setStepUpReturn(clampExpectedReturn(value))} suffix="%" inputMode="decimal" />
+                    <CalculatorControl id="stepup-period" label="Investment Period" minLabel="1 year" maxLabel="40 years" min={1} max={40} step={1} value={stepUpYears} onChange={(value) => setStepUpYears(clampYears(value))} suffix="Years" inputMode="numeric" />
+                  </div>
+                  <ProjectionSummary title={`Your projection over ${stepUpYears} ${stepUpYears === 1 ? 'year' : 'years'}`} invested={stepUpProjectionFinal.invested} returns={stepUpProjectionFinal.estimatedReturns} total={stepUpProjectionFinal.totalValue} footer={`Starts at ${formatINR(stepUpMonthlyInvestment)}/month, increases ${stepUpRate}% each year, with an assumed ${stepUpReturn}% annual return.`} totalLabel="Final Corpus" />
+                </motion.div>
+                <ProjectionChart title="Step-up SIP growth projection" data={stepUpYearlyProjection.map((row) => ({ year: row.year, value: row.totalValue }))} />
+                <ProjectionBreakdown title="View your Step-up SIP projection, year by year" rows={stepUpYearlyProjection} />
+              </>
+            )}
 
-    if (value !== "") {
-      const num = Number(value)
-      if (!isNaN(num)) {
-        setExpectedReturn(Math.min(30, Math.max(1, num)))
-      }
-    }
-  }}
-  onBlur={() => {
-    setExpectedReturnInput(expectedReturn.toString())
-  }}
-  className="w-14 min-w-0 bg-transparent text-right text-2xl font-bold text-primary outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-/>
-      <span className="text-sm text-muted-foreground">%</span>
-    </div>
-  </div>
-
-  <input
-    type="range"
-    min={1}
-    max={30}
-    step={0.5}
-    value={expectedReturn}
-    onChange={(e) => setExpectedReturn(Number(e.target.value))}
-    aria-label="Expected annual return slider"
-    className="w-full accent-accent"
-  />
-</div>
-  {/* Investment Period — premium number input, no slider */}
-  <div className="space-y-3">
-    <label className="text-sm font-bold uppercase tracking-[0.22em] text-muted-foreground">
-      Investment Period
-    </label>
-    <div className="ft-input-shell flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3.5 shadow-sm">
-      <input
-        type="number"
-        value={years}
-        min={1}
-        max={40}
-        step={1}
-        onChange={(e) =>
-          setYears(Math.min(40, Math.max(1, Number(e.target.value) || 1)))
-        }
-        aria-label="Investment period in years"
-        className="w-14 min-w-0 bg-transparent text-2xl font-bold tabular-nums text-primary outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
-      <span className="text-sm font-medium text-muted-foreground">
-        {years === 1 ? 'Year' : 'Years'}
-      </span>
-    </div>
-    <p className="text-xs text-muted-foreground">1 – 40 years</p>
-  </div>
-</div>
-
-              {/* Results — driven only by the inputs above, independent of the comparison horizon below */}
-              <div className="flex flex-col justify-center gap-5 rounded-3xl bg-secondary/40 p-6 sm:p-7">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Your projection over {years} {years === 1 ? 'year' : 'years'}
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <ResultCard label="Invested" value={formatINR(animatedTotalInvested, true)} />
-                  <ResultCard label="Est. Returns" value={formatINR(animatedEstimatedReturns, true)} />
-                </div>
-                <ResultCard label="Total Value" value={formatINR(animatedFutureValue, true)} highlight />
-                <p className="text-xs leading-5 text-muted-foreground">
-                  Based on {formatINR(monthlyInvestment)}/month at an assumed {expectedReturn}% annual return —
-                  this figure updates only with the inputs above.
-                </p>
-              </div>
-            </motion.div>
+            <p className="mt-5 text-center text-xs leading-5 text-muted-foreground">Illustrative calculations only. Actual returns may vary based on market performance. This calculator does not guarantee investment returns.</p>
 
             {/* ---- Timeline ---- */}
             <motion.div
@@ -1036,9 +970,9 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
               </p>
 
               {/* Line chart: wealth growth over time */}
-              <div className="mt-8 h-72 w-full sm:h-80">
+              <div className="mt-8 h-64 min-w-0 w-full overflow-hidden sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={growthSeries} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                  <LineChart data={growthSeries} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="var(--border, #E5E1D8)" strokeDasharray="3 6" />
                     <XAxis
                       dataKey="year"
@@ -1052,7 +986,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                       tick={{ fontSize: 12, fill: '#8A8578' }}
                       axisLine={false}
                       tickLine={false}
-                      width={64}
+                      width={56}
                     />
                     <Tooltip content={<GrowthTooltip />} cursor={{ stroke: 'rgba(11,31,58,0.15)', strokeWidth: 1 }} />
                     <Line
@@ -1063,8 +997,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                       strokeWidth={3}
                       dot={false}
                       activeDot={{ r: 6, strokeWidth: 2, stroke: '#ffffff' }}
-                      animationDuration={1100}
-                      animationEasing="ease-out"
+                      isAnimationActive={false}
                     />
                     <Line
                       type="monotone"
@@ -1074,8 +1007,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                       strokeWidth={2.5}
                       dot={false}
                       activeDot={{ r: 5, strokeWidth: 2, stroke: '#ffffff' }}
-                      animationDuration={1100}
-                      animationEasing="ease-out"
+                      isAnimationActive={false}
                     />
                     <Line
                       type="monotone"
@@ -1085,8 +1017,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                       strokeWidth={2.5}
                       dot={false}
                       activeDot={{ r: 5, strokeWidth: 2, stroke: '#ffffff' }}
-                      animationDuration={1100}
-                      animationEasing="ease-out"
+                      isAnimationActive={false}
                     />
                     <Line
                       type="monotone"
@@ -1097,8 +1028,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                       strokeDasharray="4 4"
                       dot={false}
                       activeDot={{ r: 4, strokeWidth: 2, stroke: '#ffffff' }}
-                      animationDuration={1100}
-                      animationEasing="ease-out"
+                      isAnimationActive={false}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -1116,7 +1046,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
                   Final wealth after {comparisonYears} years
                 </p>
-                <div className="mt-4 h-64 w-full">
+                <div className="mt-4 h-64 min-w-0 w-full overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={comparisonBars} margin={{ top: 24, right: 12, left: 0, bottom: 0 }} barCategoryGap="24%">
                       <XAxis
@@ -1135,8 +1065,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                         dataKey="value"
                         radius={[12, 12, 0, 0]}
                         maxBarSize={72}
-                        animationDuration={1000}
-                        animationEasing="ease-out"
+                        isAnimationActive={false}
                         label={{
                           position: 'top',
                           formatter: (v: unknown) => formatINR(Number(v), true),
@@ -1175,10 +1104,10 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
               </h3>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <ResultCard label="Mutual Fund" value={formatINR(animatedCompMF, true)} highlight />
-                <ResultCard label="PPF" value={formatINR(animatedCompPPF, true)} />
-                <ResultCard label="Fixed Deposit" value={formatINR(animatedCompFD, true)} />
-                <ResultCard label="Savings" value={formatINR(animatedCompSavings, true)} />
+                <ResultCard label="Mutual Fund" value={formatINR(compFutureValueMF, true)} highlight />
+                <ResultCard label="PPF" value={formatINR(compFutureValuePPF, true)} />
+                <ResultCard label="Fixed Deposit" value={formatINR(compFutureValueFD, true)} />
+                <ResultCard label="Savings" value={formatINR(compFutureValueSavings, true)} />
               </div>
 
               <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-accent/25 bg-accent/[0.07] px-6 py-6 text-center sm:flex-row sm:justify-between sm:text-left">
@@ -1186,7 +1115,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                   Potential difference between Mutual Fund and Savings
                 </p>
                 <p className="font-display text-3xl font-bold text-accent tabular-nums sm:text-4xl">
-                  +{formatINR(animatedCompGap, true)}
+                  +{formatINR(compGapVsSavings, true)}
                 </p>
               </div>
             </motion.div>
@@ -1534,6 +1463,71 @@ function Feature({
    Wealth Growth Calculator — subcomponents
    ============================================================ */
 
+function CalculatorControl({
+  id, label, minLabel, maxLabel, min, max, step, value, onChange, prefix, suffix, inputMode,
+}: {
+  id: string; label: string; minLabel: string; maxLabel: string; min: number; max: number; step: number; value: number; onChange: (value: number) => void; prefix?: string; suffix?: string; inputMode: 'numeric' | 'decimal'
+}) {
+  const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3"><label htmlFor={id} className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</label><span className="shrink-0 text-xs font-semibold text-muted-foreground">{minLabel} – {maxLabel}</span></div>
+      <div className="ft-input-shell flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 shadow-sm">
+        {prefix && <span aria-hidden className="text-lg font-bold text-primary/50">{prefix}</span>}
+        <input id={id} type="number" inputMode={inputMode} min={min} max={max} step={step} value={value} onChange={(e) => { const next = Number(e.target.value); if (Number.isFinite(next)) onChange(next) }} className="w-full min-w-0 bg-transparent text-xl font-bold tabular-nums text-primary outline-none [appearance:textfield] sm:text-2xl [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+        {suffix && <span aria-hidden className="shrink-0 text-sm font-medium text-muted-foreground">{suffix}</span>}
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} aria-label={`${label} slider`} className="ft-range w-full" style={{ background: `linear-gradient(to right, #C9A227 0%, #C9A227 ${percentage}%, #E5E1D8 ${percentage}%, #E5E1D8 100%)` }} />
+      <div className="flex justify-between text-xs text-muted-foreground"><span>{minLabel}</span><span>{maxLabel}</span></div>
+    </div>
+  )
+}
+
+function ProjectionSummary({ title, invested, returns, total, footer, totalLabel = 'Total Value' }: { title: string; invested: number; returns: number; total: number; footer: string; totalLabel?: string }) {
+  return (
+    <div className="flex min-w-0 flex-col justify-center gap-5 rounded-3xl bg-secondary/40 p-5 sm:p-7">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">{title}</p>
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2"><ResultCard label="Invested" value={formatINR(invested, true)} /><ResultCard label="Est. Returns" value={formatINR(returns, true)} /></div>
+      <ResultCard label={totalLabel} value={formatINR(total, true)} highlight />
+      <p className="text-xs leading-5 text-muted-foreground">{footer}</p>
+    </div>
+  )
+}
+
+function ProjectionChart({ title, data }: { title: string; data: { year: number; value: number }[] }) {
+  return (
+    <div className="mt-6 rounded-[2rem] border border-border bg-card p-5 shadow-xl shadow-primary/[0.06] sm:p-8">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">Growth chart</p>
+      <h3 className="font-display mt-2 text-xl font-semibold text-primary sm:text-2xl">{title}</h3>
+      <div className="mt-5 h-64 w-full min-w-0 sm:h-72">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="var(--border, #E5E1D8)" strokeDasharray="3 6" />
+            <XAxis dataKey="year" tickFormatter={formatYearLabel} tick={{ fontSize: 11, fill: '#8A8578' }} axisLine={false} tickLine={false} minTickGap={20} />
+            <YAxis tickFormatter={(v) => formatINR(Number(v), true)} tick={{ fontSize: 11, fill: '#8A8578' }} axisLine={false} tickLine={false} width={64} />
+            <Tooltip formatter={(v: number | string | undefined) => formatINR(Number(v ?? 0), true)} labelFormatter={(label) => formatYearLabel(Number(label))} />
+            <Line type="monotone" dataKey="value" name="Projected Value" stroke={CHART_COLORS.mutualFund} strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: '#ffffff' }} isAnimationActive={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
+function ProjectionBreakdown({ title, rows }: { title: string; rows: { year: number; invested: number; estimatedReturns: number; totalValue: number }[] }) {
+  return (
+    <details className="group mt-6 rounded-[2rem] border border-border bg-card shadow-xl shadow-primary/[0.06]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left outline-none sm:p-8 [&::-webkit-details-marker]:hidden">
+        <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">Year-wise breakdown</p><h3 className="font-display mt-2 text-xl font-semibold text-primary sm:text-2xl">{title}</h3></div>
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-secondary/50 text-primary transition-transform duration-200 group-open:rotate-180" aria-hidden="true"><ChevronDown className="size-5" /></span>
+      </summary>
+      <div className="border-t border-border px-5 pb-5 pt-5 sm:px-8 sm:pb-8 sm:pt-6"><div className="max-w-full overflow-x-auto rounded-2xl border border-border" role="region" aria-label="Year-wise projection table" tabIndex={0}>
+        <table className="min-w-[640px] w-full text-left text-sm"><thead className="bg-secondary/50 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground"><tr><th scope="col" className="px-4 py-4 sm:px-5">Year</th><th scope="col" className="px-4 py-4 sm:px-5">Invested Amount</th><th scope="col" className="px-4 py-4 sm:px-5">Estimated Returns</th><th scope="col" className="px-4 py-4 text-right sm:px-5">Total Value</th></tr></thead><tbody>{rows.map((row) => <tr key={row.year} className="border-t border-border text-primary"><td className="whitespace-nowrap px-4 py-4 font-semibold sm:px-5">{row.year}</td><td className="whitespace-nowrap px-4 py-4 tabular-nums sm:px-5">{formatINR(row.invested)}</td><td className="whitespace-nowrap px-4 py-4 tabular-nums sm:px-5">{formatINR(row.estimatedReturns)}</td><td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums sm:px-5">{formatINR(row.totalValue)}</td></tr>)}</tbody></table>
+      </div></div>
+    </details>
+  )
+}
+
 function ResultCard({
   label,
   value,
@@ -1545,7 +1539,7 @@ function ResultCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-6 transition-all duration-300 ${
+      className={`min-w-0 rounded-2xl border p-4 transition-all duration-300 sm:p-6 ${
         highlight
           ? 'border-accent/30 bg-primary text-primary-foreground shadow-lg shadow-primary/20'
           : 'border-border bg-secondary/40 text-primary hover:border-accent/30'
@@ -1558,7 +1552,7 @@ function ResultCard({
       >
         {label}
       </p>
-      <p className={`font-display mt-2 text-3xl font-semibold tabular-nums sm:text-4xl ${highlight ? 'text-accent' : 'text-primary'}`}>
+      <p className={`font-display mt-2 break-words text-xl font-semibold leading-tight tabular-nums sm:text-3xl lg:text-4xl ${highlight ? 'text-accent' : 'text-primary'}`}>
         {value}
       </p>
     </div>
