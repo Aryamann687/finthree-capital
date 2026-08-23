@@ -46,7 +46,7 @@ const CHART_COLORS = {
 
 const logo = '/logo.jpeg'
 
-const navItems = ['About', 'Services', 'Why Us', 'Contact']
+const navItems = ['Home', 'About', 'Services', 'Why Us', 'Contact']
 
 const services = [
   {
@@ -562,13 +562,276 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
           id="home"
           className="relative overflow-hidden bg-gradient-to-b from-white via-white to-accent/[0.06]"
         >
-          {/* decorative low-opacity shapes */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute -top-28 -right-20 size-[420px] rounded-full bg-accent/10 blur-3xl" />
-            <div className="absolute top-1/2 -left-40 size-[380px] -translate-y-1/2 rounded-full bg-primary/[0.05] blur-3xl" />
-            <div className="absolute bottom-0 right-1/3 size-[260px] rounded-full bg-accent/[0.07] blur-2xl" />
-          </div>
+          {/* Animated Hero background */}
+<div
+  aria-hidden
+  className="pointer-events-none absolute inset-0 overflow-hidden"
+>
+  {/* Animated navy glow */}
+  <motion.div
+    className="absolute -left-40 top-[10%] size-[560px] rounded-full bg-primary/[0.16] blur-[100px]"
+    animate={{
+      x: [0, 80, 20, 0],
+      y: [0, 40, -20, 0],
+      scale: [1, 1.12, 0.96, 1],
+    }}
+    transition={{
+      duration: 14,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  />
 
+  {/* Animated gold glow */}
+  <motion.div
+    className="absolute -right-32 -top-28 size-[620px] rounded-full bg-accent/[0.28] blur-[110px]"
+    animate={{
+      x: [0, -70, -20, 0],
+      y: [0, 50, 20, 0],
+      scale: [1, 1.15, 1.05, 1],
+    }}
+    transition={{
+      duration: 16,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay: 1,
+    }}
+  />
+
+  {/* Animated gold glow at bottom */}
+  <motion.div
+    className="absolute -bottom-40 left-1/2 h-[380px] w-[850px] -translate-x-1/2 rounded-full bg-accent/[0.18] blur-[100px]"
+    animate={{
+      scale: [1, 1.12, 1],
+      opacity: [0.55, 1, 0.55],
+      x: ["-50%", "-46%", "-50%"],
+    }}
+    transition={{
+      duration: 12,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  />
+
+  {/* Animated gold grid */}
+  <motion.div
+    className="absolute right-0 top-0 h-[65%] w-[48%]"
+    style={{
+      backgroundImage: `
+        linear-gradient(rgba(201,162,39,0.5) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,162,39,0.5) 1px, transparent 1px)
+      `,
+      backgroundSize: "24px 24px",
+      maskImage:
+        "radial-gradient(ellipse at top right, black 10%, transparent 72%)",
+      WebkitMaskImage:
+        "radial-gradient(ellipse at top right, black 10%, transparent 72%)",
+    }}
+    animate={{
+      opacity: [0.22, 0.42, 0.3, 0.22],
+      x: [0, -12, 0],
+      y: [0, 8, 0],
+    }}
+    transition={{
+      duration: 12,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  />
+
+  {/* Animated navy grid */}
+  <motion.div
+    className="absolute bottom-0 left-0 h-[45%] w-[35%]"
+    style={{
+      backgroundImage: `
+        linear-gradient(rgba(11,31,58,0.5) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(11,31,58,0.5) 1px, transparent 1px)
+      `,
+      backgroundSize: "28px 28px",
+      maskImage:
+        "radial-gradient(ellipse at bottom left, black 5%, transparent 70%)",
+      WebkitMaskImage:
+        "radial-gradient(ellipse at bottom left, black 5%, transparent 70%)",
+    }}
+    animate={{
+      opacity: [0.1, 0.28, 0.18, 0.1],
+      x: [0, 10, 0],
+    }}
+    transition={{
+      duration: 15,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  />
+
+  {/* Animated gold dots */}
+  <motion.div
+    className="absolute left-0 top-12 h-72 w-56"
+    style={{
+      backgroundImage:
+        "radial-gradient(circle, #C9A227 1.8px, transparent 1.8px)",
+      backgroundSize: "30px 30px",
+      maskImage:
+        "linear-gradient(to right, black 10%, transparent 85%)",
+      WebkitMaskImage:
+        "linear-gradient(to right, black 10%, transparent 85%)",
+    }}
+    animate={{
+      opacity: [0.25, 0.7, 0.4, 0.25],
+      y: [0, 12, 0],
+    }}
+    transition={{
+      duration: 10,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  />
+
+  {/* Animated navy dots */}
+  <motion.div
+    className="absolute bottom-20 right-0 h-56 w-64"
+    style={{
+      backgroundImage:
+        "radial-gradient(circle, #0B1F3A 1.8px, transparent 1.8px)",
+      backgroundSize: "30px 30px",
+      maskImage:
+        "linear-gradient(to left, black 10%, transparent 85%)",
+      WebkitMaskImage:
+        "linear-gradient(to left, black 10%, transparent 85%)",
+    }}
+    animate={{
+      opacity: [0.18, 0.58, 0.3, 0.18],
+      y: [0, -10, 0],
+    }}
+    transition={{
+      duration: 11,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay: 2,
+    }}
+  />
+
+  {/* Animated upward financial growth line */}
+  <motion.svg
+    className="absolute right-0 top-[8%] h-[62%] w-[52%]"
+    viewBox="0 0 700 500"
+    preserveAspectRatio="none"
+    animate={{ opacity: [0.25, 0.7, 0.45, 0.25] }}
+    transition={{
+      duration: 10,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  >
+    <motion.path
+      d="M0 420
+         C90 400, 120 370, 185 350
+         S285 290, 350 250
+         S450 210, 500 130
+         S600 55, 700 20"
+      fill="none"
+      stroke="#C9A227"
+      strokeWidth="2.5"
+      initial={{ pathLength: 0, opacity: 0 }}
+      animate={{
+        pathLength: [0, 1, 1],
+        opacity: [0, 1, 0.7],
+      }}
+      transition={{
+        duration: 6,
+        repeat: Infinity,
+        repeatDelay: 4,
+        ease: "easeInOut",
+      }}
+    />
+
+    <motion.circle
+      cx="185"
+      cy="350"
+      r="6"
+      fill="#C9A227"
+      animate={{
+        scale: [0.8, 1.4, 0.8],
+        opacity: [0.4, 1, 0.4],
+      }}
+      transition={{
+        duration: 3,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    />
+
+    <motion.circle
+      cx="350"
+      cy="250"
+      r="7"
+      fill="#C9A227"
+      animate={{
+        scale: [0.8, 1.4, 0.8],
+        opacity: [0.4, 1, 0.4],
+      }}
+      transition={{
+        duration: 3,
+        repeat: Infinity,
+        ease: "easeInOut",
+        delay: 0.8,
+      }}
+    />
+
+    <motion.circle
+      cx="500"
+      cy="130"
+      r="8"
+      fill="#C9A227"
+      animate={{
+        scale: [0.8, 1.4, 0.8],
+        opacity: [0.4, 1, 0.4],
+      }}
+      transition={{
+        duration: 3,
+        repeat: Infinity,
+        ease: "easeInOut",
+        delay: 1.6,
+      }}
+    />
+  </motion.svg>
+
+  {/* Animated flowing lines at bottom */}
+  <motion.svg
+    className="absolute bottom-0 left-0 h-[48%] w-full"
+    viewBox="0 0 1440 400"
+    preserveAspectRatio="none"
+    animate={{ y: [0, -8, 0] }}
+    transition={{
+      duration: 9,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  >
+    {[0, 22, 44, 66, 88, 110].map((offset, index) => (
+      <motion.path
+        key={offset}
+        d={`M0 ${290 + offset}
+          C160 ${370 + offset}, 270 ${120 + offset}, 440 ${245 + offset}
+          S690 ${380 + offset}, 850 ${210 + offset}
+          S1120 ${390 + offset}, 1440 ${230 + offset}`}
+        fill="none"
+        stroke={offset % 44 === 0 ? "#0B1F3A" : "#C9A227"}
+        strokeWidth="1.4"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{
+          pathLength: [0, 1],
+          opacity: [0, 0.42],
+        }}
+        transition={{
+          duration: 4 + index * 0.5,
+          delay: index * 0.2,
+          ease: "easeOut",
+        }}
+      />
+    ))}
+  </motion.svg>
+</div>
           {/* signature element: a faint hand-drawn growth curve */}
           <svg
             aria-hidden
