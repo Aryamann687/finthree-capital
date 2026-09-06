@@ -243,6 +243,8 @@ export function FinthreeSite() {
   // Comparison charts always project across a fixed horizon, selectable via
   // the timeline buttons — independent of the calculator's own period above.
   const [comparisonYears, setComparisonYears] = useState<number>(DEFAULT_COMPARISON_YEARS)
+  // ---- Ethical Investing Focus modal state ----
+  const [ethicalModalOpen, setEthicalModalOpen] = useState(false)
 
   // Keep the primary calculator controls and summary immediate while allowing
   // heavier comparison charts lower on the page to update at a lower priority.
@@ -410,6 +412,16 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Close the Ethical Investing modal on Escape.
+  useEffect(() => {
+    if (!ethicalModalOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setEthicalModalOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [ethicalModalOpen])
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -1011,7 +1023,17 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
   initial="hidden"
   whileInView="show"
   viewport={{ once: true, amount: 0.2 }}
-  className="mt-10 rounded-2xl border border-accent/30 bg-accent/10 p-5"
+  role="button"
+  tabIndex={0}
+  aria-haspopup="dialog"
+  onClick={() => setEthicalModalOpen(true)}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      setEthicalModalOpen(true)
+    }
+  }}
+  className="mt-10 cursor-pointer rounded-2xl border border-accent/30 bg-accent/10 p-5 outline-none transition-all duration-300 hover:border-accent/50 hover:bg-accent/[0.14] hover:shadow-md hover:shadow-accent/10 focus-visible:ring-2 focus-visible:ring-accent/40 active:scale-[0.995]"
 >
   <div className="inline-flex items-center gap-3 rounded-xl bg-green-50 px-4 py-3">
   <Leaf className="size-6 text-green-600" />
@@ -1683,6 +1705,8 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       >
         <MessageCircle className="size-7" />
       </a>
+
+      <EthicalInvestingModal open={ethicalModalOpen} onClose={() => setEthicalModalOpen(false)} />
     </div>
   )
 }
@@ -1719,6 +1743,62 @@ function Feature({
       <h3 className="mt-6 text-xl font-bold text-primary">{title}</h3>
       <p className="mt-3 leading-7 text-muted-foreground">{text}</p>
     </motion.article>
+  )
+}
+
+/* ============================================================
+   Ethical Investing Focus — modal
+   ============================================================ */
+
+function EthicalInvestingModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-primary/40 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ethical-investing-title"
+        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        className="relative w-full max-w-md rounded-3xl border border-border bg-[#F8F8F6] p-6 shadow-2xl shadow-primary/20 sm:p-8"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close dialog"
+          className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full border border-border bg-card text-primary transition-colors hover:border-accent hover:text-accent"
+        >
+          <X className="size-4" />
+        </button>
+
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
+          Values-aligned investing
+        </p>
+        <h3 id="ethical-investing-title" className="font-display mt-3 text-2xl font-semibold text-primary sm:text-3xl">
+          Ethical Investing
+        </h3>
+        <p className="font-display mt-1 text-base italic text-primary/70">
+          Invest with purpose. Plan with clarity.
+        </p>
+
+        <p className="mt-5 text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
+          Ethical investing considers not only potential financial returns, but also factors
+          such as environmental responsibility, social impact, and corporate governance.
+          At Finthree Capital, we help you explore options that align with your financial
+          goals, risk profile, and values.
+        </p>
+
+        <p className="mt-5 rounded-xl border border-border bg-secondary/40 p-4 text-xs leading-6 text-muted-foreground">
+          Ethical investing does not eliminate investment risk. Fund selection should be
+          based on your individual objectives and risk appetite.
+        </p>
+      </motion.div>
+    </div>
   )
 }
 
