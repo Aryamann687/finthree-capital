@@ -2,10 +2,11 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { MessageCircle } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import emailjs from "@emailjs/browser";
 import {
   ArrowRight,
+  Bot,
   Check,
   ChevronDown,
   Leaf,
@@ -13,6 +14,7 @@ import {
   MapPin,
   Menu,
   Phone,
+  Send,
   ShieldCheck,
   Sparkles,
   Target,
@@ -222,6 +224,121 @@ function formatYearLabel(year: number) {
   return `Yr ${year}`
 }
 
+/* ============================================================
+   Ask Finthree — lightweight local FAQ chatbot (no external APIs)
+   ============================================================ */
+
+type ChatRole = 'user' | 'bot'
+type ChatCta = 'calculator' | 'whatsapp' | null
+
+interface ChatMessage {
+  id: string
+  role: ChatRole
+  text: string
+  cta?: ChatCta
+}
+
+const CHAT_DISCLAIMER =
+  "This assistant shares general, educational information only — it can't offer personalized investment advice, fund/stock recommendations, or guaranteed returns. For advice tailored to you, please talk to our team."
+
+const SUGGESTED_QUESTIONS = [
+  'What is SIP?',
+  'SIP vs Lumpsum?',
+  'What is a Step-up SIP?',
+  'What is SWP?',
+  'How does compounding work?',
+  "What's my risk appetite?",
+]
+
+const FAQ_TOPICS: { keywords: string[]; answer: string; cta?: ChatCta }[] = [
+  {
+    keywords: ['step up', 'step-up', 'stepup', 'top up sip', 'top-up sip'],
+    answer:
+      "A Step-up SIP automatically increases your monthly investment by a fixed percentage every year, helping your contributions keep pace with rising income and inflation over time.",
+    cta: 'calculator',
+  },
+  {
+    keywords: ['sip vs lumpsum', 'sip or lumpsum', 'lumpsum vs sip', 'sip versus lumpsum'],
+    answer:
+      "SIPs spread your investment over time, which can smooth out market ups and downs through rupee-cost averaging. Lumpsum investing puts your full amount to work immediately, which suits investors with surplus funds who are comfortable with short-term volatility. Many investors use a mix of both, depending on their cash flow and goals.",
+    cta: 'calculator',
+  },
+  {
+    keywords: ['swp', 'systematic withdrawal'],
+    answer:
+      "A Systematic Withdrawal Plan (SWP) lets you withdraw a fixed amount from your mutual fund investment at regular intervals — useful for generating a steady income stream, such as during retirement.",
+  },
+  {
+    keywords: ['goal sip', 'goal based', 'goal-based', 'financial goal'],
+    answer:
+      "A goal-based SIP is simply an SIP planned around a specific target — like a child's education, a home down payment, or retirement — so the monthly amount and duration are chosen to work toward that goal.",
+    cta: 'calculator',
+  },
+  {
+    keywords: ['inflation'],
+    answer:
+      "Inflation is the gradual rise in prices over time, which reduces the purchasing power of money. Investments that aim to grow faster than inflation can help preserve and grow your real wealth over the long term.",
+  },
+  {
+    keywords: ['compound', 'compounding'],
+    answer:
+      "Compounding happens when your investment returns start generating their own returns, so your money can grow faster the longer it stays invested. This is why starting early and staying invested for the long term matters.",
+    cta: 'calculator',
+  },
+  {
+    keywords: ['diversif'],
+    answer:
+      "Diversification means spreading your investments across different asset classes, sectors, or funds so the impact of any single investment performing poorly is reduced.",
+  },
+  {
+    keywords: ['index fund'],
+    answer:
+      "An index fund aims to mirror the performance of a market index, such as the Nifty 50, by holding similar stocks in similar proportions — typically at a lower cost than actively managed funds.",
+  },
+  {
+    keywords: ['equity', 'debt fund', 'equity vs debt', 'equity and debt'],
+    answer:
+      "Equity funds invest mainly in stocks and tend to offer higher growth potential with higher volatility. Debt funds invest in fixed-income instruments and generally aim for more stability with comparatively lower, steadier returns.",
+  },
+  {
+    keywords: ['risk appetite', 'risk profile', 'how much risk'],
+    answer:
+      "Risk appetite is how much market fluctuation you're comfortable with while pursuing returns. It depends on your investment horizon, financial goals, and personal comfort with volatility. It's worth having a proper conversation with our team to assess yours.",
+    cta: 'whatsapp',
+  },
+  {
+    keywords: ['lumpsum', 'lump sum'],
+    answer:
+      "A lumpsum investment means putting in a large amount in one go rather than in installments. It can suit investors who have surplus funds and are comfortable with the full amount being exposed to market movements from day one.",
+    cta: 'calculator',
+  },
+  {
+    keywords: ['sip', 'systematic investment'],
+    answer:
+      "A Systematic Investment Plan (SIP) lets you invest a fixed amount regularly — usually monthly — into a mutual fund. It encourages disciplined investing and can help average out purchase cost over time.",
+    cta: 'calculator',
+  },
+  {
+    keywords: ['mutual fund'],
+    answer:
+      "A mutual fund pools money from many investors and is professionally managed to invest in a mix of stocks, bonds, or other securities, based on the fund's stated objective.",
+  },
+]
+
+function matchFaqAnswer(rawQuery: string): { answer: string; cta?: ChatCta } {
+  const query = rawQuery.toLowerCase()
+  for (const topic of FAQ_TOPICS) {
+    if (topic.keywords.some((keyword) => query.includes(keyword))) {
+      return { answer: topic.answer, cta: topic.cta ?? null }
+    }
+  }
+  return {
+    answer:
+      "I don't have a specific answer for that yet, but I'd love to help. Try asking about SIP, Lumpsum, Step-up SIP, SWP, compounding, diversification or risk appetite — or reach our team directly for anything more specific to your situation.",
+    cta: 'whatsapp',
+  }
+}
+
 export function FinthreeSite() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -429,6 +546,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
   }
 
   return (
+    
     <div className="min-h-screen bg-background font-body text-foreground antialiased">
       {/* Fonts: Fraunces for display headings, Inter for body/UI copy.
           Move this import into your root layout <head> in production. */}
@@ -1696,7 +1814,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         </div>
       </footer>
 
-      <a
+<a
         href="https://wa.me/919621692197"
         target="_blank"
         rel="noreferrer"
@@ -1705,6 +1823,11 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       >
         <MessageCircle className="size-7" />
       </a>
+
+      <AskFinthreeChat
+        onNavigateCalculator={() => scrollTo('calculator')}
+        whatsappHref="https://wa.me/919621692197"
+      />
 
       <EthicalInvestingModal open={ethicalModalOpen} onClose={() => setEthicalModalOpen(false)} />
     </div>
@@ -1803,6 +1926,212 @@ function EthicalInvestingModal({ open, onClose }: { open: boolean; onClose: () =
 }
 
 /* ============================================================
+   Ask Finthree — floating chatbot widget
+   ============================================================ */
+
+function AskFinthreeChat({
+  onNavigateCalculator,
+  whatsappHref,
+}: {
+  onNavigateCalculator: () => void
+  whatsappHref: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 'welcome',
+      role: 'bot',
+      text:
+        "Hi! I'm the Ask Finthree assistant. I can explain common investing concepts like SIP, Lumpsum, Step-up SIP, SWP, compounding and more. What would you like to know?",
+    },
+  ])
+  const [input, setInput] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+
+  // Once the user has sent at least one message, the suggested-question
+  // chips are no longer needed — hiding them frees up vertical space for
+  // the conversation itself.
+  const hasUserMessage = messages.some((message) => message.role === 'user')
+
+  // Close on Escape.
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
+
+  const pushMessage = (message: ChatMessage) => {
+    setMessages((prev) => [...prev, message])
+  }
+
+  const handleAsk = (question: string) => {
+    const trimmed = question.trim()
+    if (!trimmed) return
+    pushMessage({ id: `u-${Date.now()}`, role: 'user', text: trimmed })
+    setInput('')
+    setIsTyping(true)
+    const { answer, cta } = matchFaqAnswer(trimmed)
+    window.setTimeout(() => {
+      pushMessage({ id: `b-${Date.now()}`, role: 'bot', text: answer, cta })
+      setIsTyping(false)
+    }, 450)
+  }
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    handleAsk(input)
+  }
+
+  return (
+    <>
+      <motion.button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-controls="ask-finthree-panel"
+        aria-label={open ? 'Close Ask Finthree chat assistant' : 'Open Ask Finthree chat assistant'}
+        whileTap={{ scale: 0.94 }}
+        className="fixed bottom-24 right-5 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/25 transition-transform duration-300 hover:scale-110 sm:bottom-5 sm:right-24"
+      >
+        {open ? <X className="size-6" /> : <Bot className="size-6" />}
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            id="ask-finthree-panel"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Ask Finthree chat assistant"
+            initial={{ opacity: 0, y: 16, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.97 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="fixed inset-x-4 bottom-40 top-16 z-40 flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl shadow-primary/20 sm:inset-x-auto sm:top-auto sm:bottom-24 sm:right-24 sm:h-[calc(100vh-8rem)] sm:max-h-[720px] sm:min-h-[520px] sm:w-[380px]"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 bg-primary px-5 py-4 text-primary-foreground">
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                  <Bot className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold leading-none">Ask Finthree</p>
+                  <p className="mt-1 text-xs text-primary-foreground/60">Investing basics, explained</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close chat"
+                className="flex size-8 items-center justify-center rounded-full text-primary-foreground/70 transition-colors hover:bg-white/10 hover:text-primary-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite" role="log">
+              {messages.map((message) => (
+                <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
+                      message.role === 'user'
+                        ? 'rounded-br-sm bg-accent text-accent-foreground'
+                        : 'rounded-bl-sm bg-secondary/60 text-primary'
+                    }`}
+                  >
+                    <p>{message.text}</p>
+                    {message.cta === 'calculator' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onNavigateCalculator()
+                          setOpen(false)
+                        }}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                      >
+                        Try the calculator
+                        <ArrowRight className="size-3" />
+                      </button>
+                    )}
+                    {message.cta === 'whatsapp' && (
+                      <a
+                        href={whatsappHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white transition-colors hover:brightness-95"
+                      >
+                        <MessageCircle className="size-3.5" />
+                        Talk to Finthree on WhatsApp
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="rounded-2xl rounded-bl-sm bg-secondary/60 px-4 py-2.5 text-sm text-muted-foreground">
+                    Typing…
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Suggested questions — visible only until the user sends their first message */}
+            {!hasUserMessage && (
+              <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3">
+                {SUGGESTED_QUESTIONS.map((question) => (
+                  <button
+                    key={question}
+                    type="button"
+                    onClick={() => handleAsk(question)}
+                    className="rounded-full border border-border bg-secondary/40 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:border-accent hover:text-accent"
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Disclaimer */}
+            <p className="border-t border-border px-4 py-1.5 text-[10px] leading-[1.3] text-muted-foreground">
+              {CHAT_DISCLAIMER}
+            </p>
+
+            {/* Input */}
+            <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t border-border px-4 py-3">
+              <label htmlFor="ask-finthree-input" className="sr-only">
+                Ask a question
+              </label>
+              <input
+                id="ask-finthree-input"
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask about SIP, SWP, compounding…"
+                className="min-w-0 flex-1 rounded-full border border-input bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-200 focus:border-accent focus:ring-2 focus:ring-accent/30"
+              />
+              <button
+                type="submit"
+                aria-label="Send message"
+                disabled={!input.trim()}
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-sm transition-transform duration-200 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Send className="size-4" />
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+
+/* ============================================================
    Wealth Growth Calculator — subcomponents
    ============================================================ */
 
@@ -1812,12 +2141,43 @@ function CalculatorControl({
   id: string; label: string; minLabel: string; maxLabel: string; min: number; max: number; step: number; value: number; onChange: (value: number) => void; prefix?: string; suffix?: string; inputMode: 'numeric' | 'decimal'
 }) {
   const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
+
+  // Local text buffer decoupled from the numeric `value` prop so the field
+  // can be temporarily empty (or mid-edit) without being clamped on every
+  // keystroke. It resyncs whenever `value` changes from outside (e.g. the
+  // slider), and is clamped to [min, max] only on blur.
+  const [textValue, setTextValue] = useState(String(value))
+  useEffect(() => {
+    setTextValue(String(value))
+  }, [value])
+
+  const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    setTextValue(raw)
+    if (raw === '') return
+    const next = Number(raw)
+    if (Number.isFinite(next)) onChange(next)
+  }
+
+  const handleTextBlur = () => {
+    const next = Number(textValue)
+    if (textValue === '' || !Number.isFinite(next) || next < min) {
+      onChange(min)
+      setTextValue(String(min))
+    } else if (next > max) {
+      onChange(max)
+      setTextValue(String(max))
+    } else {
+      setTextValue(String(next))
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3"><label htmlFor={id} className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</label><span className="shrink-0 text-xs font-semibold text-muted-foreground">{minLabel} – {maxLabel}</span></div>
       <div className="ft-input-shell flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 shadow-sm">
         {prefix && <span aria-hidden className="text-lg font-bold text-primary/50">{prefix}</span>}
-        <input id={id} type="number" inputMode={inputMode} min={min} max={max} step={step} value={value} onChange={(e) => { const next = Number(e.target.value); if (Number.isFinite(next)) onChange(next) }} className="w-full min-w-0 bg-transparent text-xl font-bold tabular-nums text-primary outline-none [appearance:textfield] sm:text-2xl [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+        <input id={id} type="number" inputMode={inputMode} min={min} max={max} step={step} value={textValue} onChange={handleTextChange} onBlur={handleTextBlur} className="w-full min-w-0 bg-transparent text-xl font-bold tabular-nums text-primary outline-none [appearance:textfield] sm:text-2xl [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
         {suffix && <span aria-hidden className="shrink-0 text-sm font-medium text-muted-foreground">{suffix}</span>}
       </div>
       <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} aria-label={`${label} slider`} className="ft-range w-full" style={{ background: `linear-gradient(to right, #C9A227 0%, #C9A227 ${percentage}%, #E5E1D8 ${percentage}%, #E5E1D8 100%)` }} />
