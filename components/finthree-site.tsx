@@ -1023,9 +1023,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 2.15, duration: 0.7 }}
             >
-      <p className="mt-10 text-3xl font-bold tracking-tight text-primary sm:text-4xl">
-  <span className="not-italic font-bold text-primary">Because</span>
-  <br />
+      <p className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">
   Your money needs a <span className="text-accent not-italic">plan</span> not just a product.
 </p>
              
@@ -1375,7 +1373,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
               {/* Line chart: wealth growth over time */}
               <div className="mt-8 h-64 min-w-0 w-full overflow-hidden sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={growthSeries} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
+                  <LineChart data={growthSeries} margin={{ top: 10, right: 8, left: 4, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="var(--border, #E5E1D8)" strokeDasharray="3 6" />
                     <XAxis
                       dataKey="year"
@@ -1389,7 +1387,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                       tick={{ fontSize: 12, fill: '#8A8578' }}
                       axisLine={false}
                       tickLine={false}
-                      width={56}
+                      width={72}
                     />
                     <Tooltip content={<GrowthTooltip />} cursor={{ stroke: 'rgba(11,31,58,0.15)', strokeWidth: 1 }} />
                     <Line
@@ -2208,7 +2206,7 @@ function ProjectionChart({ title, data }: { title: string; data: { year: number;
             <CartesianGrid vertical={false} stroke="var(--border, #E5E1D8)" strokeDasharray="3 6" />
             <XAxis dataKey="year" tickFormatter={formatYearLabel} tick={{ fontSize: 11, fill: '#8A8578' }} axisLine={false} tickLine={false} minTickGap={20} />
             <YAxis tickFormatter={(v) => formatINR(Number(v), true)} tick={{ fontSize: 11, fill: '#8A8578' }} axisLine={false} tickLine={false} width={64} />
-            <Tooltip formatter={(v: number | string | undefined) => formatINR(Number(v ?? 0), true)} labelFormatter={(label) => formatYearLabel(Number(label))} />
+            <Tooltip formatter={(v: any) => formatINR(Number(v ?? 0), true)} labelFormatter={(label) => formatYearLabel(Number(label))} />
             <Line type="monotone" dataKey="value" name="Projected Value" stroke={CHART_COLORS.mutualFund} strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: '#ffffff' }} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
