@@ -7,21 +7,8 @@ export const metadata: Metadata = {
   description: 'Finthree Capital helps you invest wisely with personalized mutual fund strategies tailored to your financial goals.',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/icon.jpeg',
+    apple: '/icon.jpeg',
   },
 }
 
