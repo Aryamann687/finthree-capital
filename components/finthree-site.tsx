@@ -56,24 +56,32 @@ const services = [
     title: 'Systematic Investment Plan',
     short: 'SIP',
     text: 'Build wealth gradually with regular, disciplined investments.',
+    details:
+      "A Systematic Investment Plan lets you invest a fixed amount at regular intervals into a mutual fund scheme. It uses rupee-cost averaging to smooth out market volatility and encourages disciplined, long-term wealth creation without needing to time the market.",
   },
   {
     icon: ArrowRight,
     title: 'Systematic Transfer Plan',
     short: 'STP',
     text: 'Transfer investments systematically to optimize returns.',
+    details:
+      "A Systematic Transfer Plan lets you move a fixed amount periodically from one mutual fund scheme to another — commonly from a debt fund to an equity fund. It helps you deploy a lump sum gradually into higher-growth investments while reducing timing risk.",
   },
   {
     icon: Wallet,
     title: 'One-time Investment',
     short: 'Lumpsum',
     text: 'Invest a significant amount for potential long-term growth.',
+    details:
+      "A one-time Lumpsum investment puts your full amount to work in a mutual fund scheme immediately. It suits investors with surplus funds who are comfortable with market-linked, short-term volatility in pursuit of long-term growth.",
   },
   {
     icon: ArrowRight,
     title: 'Systematic Withdrawal Plan',
     short: 'SWP',
     text: 'Generate regular income from your mutual fund investments.',
+    details:
+      "A Systematic Withdrawal Plan lets you withdraw a fixed amount from your mutual fund investment at chosen intervals, while the remaining corpus stays invested and continues to grow. It's often used to generate a regular income stream, such as during retirement.",
   },
 ]
 
@@ -362,6 +370,13 @@ export function FinthreeSite() {
   const [comparisonYears, setComparisonYears] = useState<number>(DEFAULT_COMPARISON_YEARS)
   // ---- Ethical Investing Focus modal state ----
   const [ethicalModalOpen, setEthicalModalOpen] = useState(false)
+  // ---- Service card "Learn more" expand/collapse state ----
+  // Keyed by each service's short code (SIP/STP/Lumpsum/SWP) so the four
+  // cards can be expanded or collapsed completely independently of one another.
+  const [expandedServiceCards, setExpandedServiceCards] = useState<Record<string, boolean>>({})
+  const toggleServiceCard = (key: string) => {
+    setExpandedServiceCards((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
 
   // Keep the primary calculator controls and summary immediate while allowing
   // heavier comparison charts lower on the page to update at a lower priority.
@@ -1171,30 +1186,56 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
             viewport={{ once: true, amount: 0.2 }}
             className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
           >
-            {services.map(({ icon: Icon, title, short, text }) => (
-              <motion.article
-                key={short}
-                variants={fadeUp}
-                className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card p-7 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-2xl hover:shadow-primary/[0.08]"
-              >
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.05] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                <div className="relative flex size-12 items-center justify-center rounded-xl bg-accent/15 text-accent transition-transform duration-500 group-hover:scale-110">
-                  <Icon className="size-6" />
-                </div>
-                <p className="relative mt-7 text-xs font-bold uppercase tracking-[0.2em] text-accent">
-                  {short}
-                </p>
-                <h3 className="relative mt-2 text-xl font-bold text-primary">{title}</h3>
-                <p className="relative mt-4 leading-7 text-muted-foreground">{text}</p>
-                <button
-                  onClick={() => scrollTo('contact')}
-                  className="relative mt-auto inline-flex items-center gap-2 pt-7 text-sm font-bold text-primary transition-colors group-hover:text-accent"
+            {services.map(({ icon: Icon, title, short, text, details }) => {
+              const isServiceExpanded = !!expandedServiceCards[short]
+              const detailsId = `service-details-${short}`
+              return (
+                <motion.article
+                  key={short}
+                  variants={fadeUp}
+                  className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card p-7 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-2xl hover:shadow-primary/[0.08]"
                 >
-                  Learn more
-                  <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </button>
-              </motion.article>
-            ))}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.05] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  <div className="relative flex size-12 items-center justify-center rounded-xl bg-accent/15 text-accent transition-transform duration-500 group-hover:scale-110">
+                    <Icon className="size-6" />
+                  </div>
+                  <p className="relative mt-7 text-xs font-bold uppercase tracking-[0.2em] text-accent">
+                    {short}
+                  </p>
+                  <h3 className="relative mt-2 text-xl font-bold text-primary">{title}</h3>
+                  <p className="relative mt-4 leading-7 text-muted-foreground">{text}</p>
+                  <button
+                    type="button"
+                    onClick={() => toggleServiceCard(short)}
+                    aria-expanded={isServiceExpanded}
+                    aria-controls={detailsId}
+                    className="relative mt-auto inline-flex items-center gap-2 pt-7 text-sm font-bold text-primary transition-colors group-hover:text-accent"
+                  >
+                    {isServiceExpanded ? 'Show less' : 'Learn more'}
+                    <ChevronDown
+                      className={`size-4 transition-transform duration-300 ${isServiceExpanded ? 'rotate-180' : 'group-hover:translate-y-0.5'}`}
+                    />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isServiceExpanded && (
+                      <motion.div
+                        id={detailsId}
+                        key="details"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        className="relative overflow-hidden"
+                      >
+                        <p className="mt-4 rounded-2xl border border-accent/20 bg-accent/[0.06] p-4 text-sm leading-6 text-muted-foreground">
+                          {details}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.article>
+              )
+            })}
           </motion.div>
         </section>
 
