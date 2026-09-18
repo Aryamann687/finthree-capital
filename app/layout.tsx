@@ -4,11 +4,13 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Finthree Capital | Invest in What Matters',
-  description: 'Finthree Capital helps you invest wisely with personalized mutual fund strategies tailored to your financial goals.',
+  description:
+    'Finthree Capital helps you invest wisely with personalized mutual fund strategies tailored to your financial goals.',
   generator: 'v0.app',
   icons: {
-    icon: '/icon.jpeg',
-    apple: '/icon.jpeg',
+    icon: '/logo.jpeg',
+    shortcut: '/logo.jpeg',
+    apple: '/logo.jpeg',
   },
 }
 

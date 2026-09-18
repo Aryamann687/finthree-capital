@@ -384,29 +384,29 @@ export function FinthreeSite() {
   const deferredExpectedReturn = useDeferredValue(expectedReturn)
 
   const [formData, setFormData] = useState({
-  name: "", email: "", phone: "", message: "",
-});
-const [sending, setSending] = useState(false)
+    name: "", email: "", phone: "", message: "",
+  });
+  const [sending, setSending] = useState(false)
 
-const handleFormFieldChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  const { name, value } = e.target
-  setFormData((prev) => ({ ...prev, [name]: value }))
-}
+  const handleFormFieldChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
-const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  e.preventDefault()
-  setSending(true)
-  try {
-    await emailjs.send(process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID as string, process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID as string, {
-      from_name: formData.name, from_email: formData.email, phone: formData.phone, message: formData.message,
-    }, process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY as string)
-    setSubmitted(true)
-    setFormData({ name: '', email: '', phone: '', message: '' })
-  } catch (error) {
-    console.error('EmailJS send failed:', error)
-    alert('Sorry, something went wrong while sending your message. Please try again or contact us directly.')
-  } finally { setSending(false) }
-}
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setSending(true)
+    try {
+      await emailjs.send(process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID as string, process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID as string, {
+        from_name: formData.name, from_email: formData.email, phone: formData.phone, message: formData.message,
+      }, process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY as string)
+      setSubmitted(true)
+      setFormData({ name: '', email: '', phone: '', message: '' })
+    } catch (error) {
+      console.error('EmailJS send failed:', error)
+      alert('Sorry, something went wrong while sending your message. Please try again or contact us directly.')
+    } finally { setSending(false) }
+  }
 
   const clampMonthlyInvestment = (value: number) => Math.min(100000, Math.max(500, Math.round(value / 500) * 500))
   const clampExpectedReturn = (value: number) => Math.min(30, Math.max(1, Math.round(value * 10) / 10))
@@ -528,8 +528,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
   const compGapVsSavings = Math.max(compFutureValueMF - compFutureValueSavings, 0)
   const insightMessage = useMemo(
     () =>
-      `Investing ${formatINR(monthlyInvestment)} every month for ${years} year${
-        years === 1 ? '' : 's'
+      `Investing ${formatINR(monthlyInvestment)} every month for ${years} year${years === 1 ? '' : 's'
       } at an assumed ${expectedReturn}% annual return could grow to roughly ${formatINR(
         futureValueMF,
         true,
@@ -561,7 +560,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
   }
 
   return (
-    
+
     <div className="min-h-screen bg-background font-body text-foreground antialiased">
       {/* Fonts: Fraunces for display headings, Inter for body/UI copy.
           Move this import into your root layout <head> in production. */}
@@ -626,357 +625,356 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       `}</style>
 
       {/* ---------------- Header ---------------- */}
-<header
-  className={`sticky top-0 z-50 border-b transition-all duration-300 ${
-    scrolled
-      ? 'border-black/5 bg-[#F1F1ED]/95 shadow-sm backdrop-blur-xl'
-      : 'border-transparent bg-[#F1F1ED]/80 backdrop-blur-md'
-  }`}
->
-  <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-    <button
-      aria-label="Finthree Capital home"
-      onClick={() => scrollTo('home')}
-      className="flex items-center gap-3 transition-opacity hover:opacity-90"
-    >
-      <img
-        src={logo}
-        alt="Finthree Capital logo"
-        className="size-14 rounded-full object-cover ring-1 ring-primary/10"
-      />
-      <div className="hidden text-left sm:block">
-        <p className="font-display text-lg font-semibold leading-none tracking-tight text-primary">
-          Finthree Capital
-        </p>
-        <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          Private Limited
-        </p>
-      </div>
-    </button>
-
-    <nav className="hidden items-center gap-9 md:flex" aria-label="Main navigation">
-      {navItems.map((item) => (
-        <NavLink
-          key={item}
-          label={item}
-          onClick={() => scrollTo(item === 'Why Us' ? 'why-us' : item.toLowerCase())}
-        />
-      ))}
-    </nav>
-
-    <button
-      onClick={() => scrollTo('contact')}
-      className="hidden rounded-full bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-sm shadow-accent/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30 md:block"
-    >
-      Contact Us
-    </button>
-
-    <button
-      className="rounded-md p-2 text-primary md:hidden"
-      aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-      aria-expanded={menuOpen}
-      onClick={() => setMenuOpen(!menuOpen)}
-    >
-      {menuOpen ? <X /> : <Menu />}
-    </button>
-  </div>
-
-  {menuOpen && (
-    <nav className="flex flex-col gap-4 border-t border-black/5 bg-[#F8F8F6] px-5 py-6 md:hidden">
-      {navItems.map((item) => (
-        <button
-          key={item}
-          onClick={() => scrollTo(item === 'Why Us' ? 'why-us' : item.toLowerCase())}
-          className="text-left font-semibold text-primary"
-        >
-          {item}
-        </button>
-      ))}
-      <button
-        onClick={() => scrollTo('contact')}
-        className="rounded-full bg-accent px-5 py-3 font-bold text-accent-foreground"
+      <header
+        className={`sticky top-0 z-50 border-b transition-all duration-300 ${scrolled
+          ? 'border-black/5 bg-[#F1F1ED]/95 shadow-sm backdrop-blur-xl'
+          : 'border-transparent bg-[#F1F1ED]/80 backdrop-blur-md'
+          }`}
       >
-        Contact Us
-      </button>
-    </nav>
-  )}
-</header>
-    <main>
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
+          <button
+            aria-label="Finthree Capital home"
+            onClick={() => scrollTo('home')}
+            className="flex items-center gap-3 transition-opacity hover:opacity-90"
+          >
+            <img
+              src={logo}
+              alt="Finthree Capital logo"
+              className="size-14 rounded-full object-cover ring-1 ring-primary/10"
+            />
+            <div className="hidden text-left sm:block">
+              <p className="font-display text-lg font-semibold leading-none tracking-tight text-primary">
+                Finthree Capital
+              </p>
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Private Limited
+              </p>
+            </div>
+          </button>
+
+          <nav className="hidden items-center gap-9 md:flex" aria-label="Main navigation">
+            {navItems.map((item) => (
+              <NavLink
+                key={item}
+                label={item}
+                onClick={() => scrollTo(item === 'Why Us' ? 'why-us' : item.toLowerCase())}
+              />
+            ))}
+          </nav>
+
+          <button
+            onClick={() => scrollTo('contact')}
+            className="hidden rounded-full bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-sm shadow-accent/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30 md:block"
+          >
+            Contact Us
+          </button>
+
+          <button
+            className="rounded-md p-2 text-primary md:hidden"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+
+        {menuOpen && (
+          <nav className="flex flex-col gap-4 border-t border-black/5 bg-[#F8F8F6] px-5 py-6 md:hidden">
+            {navItems.map((item) => (
+              <button
+                key={item}
+                onClick={() => scrollTo(item === 'Why Us' ? 'why-us' : item.toLowerCase())}
+                className="text-left font-semibold text-primary"
+              >
+                {item}
+              </button>
+            ))}
+            <button
+              onClick={() => scrollTo('contact')}
+              className="rounded-full bg-accent px-5 py-3 font-bold text-accent-foreground"
+            >
+              Contact Us
+            </button>
+          </nav>
+        )}
+      </header>
+      <main>
         {/* ---------------- Hero ---------------- */}
         <section
           id="home"
           className="relative overflow-hidden bg-gradient-to-b from-white via-white to-accent/[0.06]"
         >
           {/* Animated Hero background */}
-<div
-  aria-hidden
-  className="pointer-events-none absolute inset-0 overflow-hidden"
->
-  {/* Animated navy glow */}
-  <motion.div
-    className="absolute -left-40 top-[10%] size-[560px] rounded-full bg-primary/[0.16] blur-[100px]"
-    animate={{
-      x: [0, 80, 20, 0],
-      y: [0, 40, -20, 0],
-      scale: [1, 1.12, 0.96, 1],
-    }}
-    transition={{
-      duration: 14,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 overflow-hidden"
+          >
+            {/* Animated navy glow */}
+            <motion.div
+              className="absolute -left-40 top-[10%] size-[560px] rounded-full bg-primary/[0.16] blur-[100px]"
+              animate={{
+                x: [0, 80, 20, 0],
+                y: [0, 40, -20, 0],
+                scale: [1, 1.12, 0.96, 1],
+              }}
+              transition={{
+                duration: 14,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
 
-  {/* Animated gold glow */}
-  <motion.div
-    className="absolute -right-32 -top-28 size-[620px] rounded-full bg-accent/[0.28] blur-[110px]"
-    animate={{
-      x: [0, -70, -20, 0],
-      y: [0, 50, 20, 0],
-      scale: [1, 1.15, 1.05, 1],
-    }}
-    transition={{
-      duration: 16,
-      repeat: Infinity,
-      ease: "easeInOut",
-      delay: 1,
-    }}
-  />
+            {/* Animated gold glow */}
+            <motion.div
+              className="absolute -right-32 -top-28 size-[620px] rounded-full bg-accent/[0.28] blur-[110px]"
+              animate={{
+                x: [0, -70, -20, 0],
+                y: [0, 50, 20, 0],
+                scale: [1, 1.15, 1.05, 1],
+              }}
+              transition={{
+                duration: 16,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1,
+              }}
+            />
 
-  {/* Animated gold glow at bottom */}
-  <motion.div
-    className="absolute -bottom-40 left-1/2 h-[380px] w-[850px] -translate-x-1/2 rounded-full bg-accent/[0.18] blur-[100px]"
-    animate={{
-      scale: [1, 1.12, 1],
-      opacity: [0.55, 1, 0.55],
-      x: ["-50%", "-46%", "-50%"],
-    }}
-    transition={{
-      duration: 12,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  />
+            {/* Animated gold glow at bottom */}
+            <motion.div
+              className="absolute -bottom-40 left-1/2 h-[380px] w-[850px] -translate-x-1/2 rounded-full bg-accent/[0.18] blur-[100px]"
+              animate={{
+                scale: [1, 1.12, 1],
+                opacity: [0.55, 1, 0.55],
+                x: ["-50%", "-46%", "-50%"],
+              }}
+              transition={{
+                duration: 12,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
 
-  {/* Animated gold grid */}
-  <motion.div
-    className="absolute right-0 top-0 h-[65%] w-[48%]"
-    style={{
-      backgroundImage: `
+            {/* Animated gold grid */}
+            <motion.div
+              className="absolute right-0 top-0 h-[65%] w-[48%]"
+              style={{
+                backgroundImage: `
         linear-gradient(rgba(201,162,39,0.5) 1px, transparent 1px),
         linear-gradient(90deg, rgba(201,162,39,0.5) 1px, transparent 1px)
       `,
-      backgroundSize: "24px 24px",
-      maskImage:
-        "radial-gradient(ellipse at top right, black 10%, transparent 72%)",
-      WebkitMaskImage:
-        "radial-gradient(ellipse at top right, black 10%, transparent 72%)",
-    }}
-    animate={{
-      opacity: [0.22, 0.42, 0.3, 0.22],
-      x: [0, -12, 0],
-      y: [0, 8, 0],
-    }}
-    transition={{
-      duration: 12,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  />
+                backgroundSize: "24px 24px",
+                maskImage:
+                  "radial-gradient(ellipse at top right, black 10%, transparent 72%)",
+                WebkitMaskImage:
+                  "radial-gradient(ellipse at top right, black 10%, transparent 72%)",
+              }}
+              animate={{
+                opacity: [0.22, 0.42, 0.3, 0.22],
+                x: [0, -12, 0],
+                y: [0, 8, 0],
+              }}
+              transition={{
+                duration: 12,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
 
-  {/* Animated navy grid */}
-  <motion.div
-    className="absolute bottom-0 left-0 h-[45%] w-[35%]"
-    style={{
-      backgroundImage: `
+            {/* Animated navy grid */}
+            <motion.div
+              className="absolute bottom-0 left-0 h-[45%] w-[35%]"
+              style={{
+                backgroundImage: `
         linear-gradient(rgba(11,31,58,0.5) 1px, transparent 1px),
         linear-gradient(90deg, rgba(11,31,58,0.5) 1px, transparent 1px)
       `,
-      backgroundSize: "28px 28px",
-      maskImage:
-        "radial-gradient(ellipse at bottom left, black 5%, transparent 70%)",
-      WebkitMaskImage:
-        "radial-gradient(ellipse at bottom left, black 5%, transparent 70%)",
-    }}
-    animate={{
-      opacity: [0.1, 0.28, 0.18, 0.1],
-      x: [0, 10, 0],
-    }}
-    transition={{
-      duration: 15,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  />
+                backgroundSize: "28px 28px",
+                maskImage:
+                  "radial-gradient(ellipse at bottom left, black 5%, transparent 70%)",
+                WebkitMaskImage:
+                  "radial-gradient(ellipse at bottom left, black 5%, transparent 70%)",
+              }}
+              animate={{
+                opacity: [0.1, 0.28, 0.18, 0.1],
+                x: [0, 10, 0],
+              }}
+              transition={{
+                duration: 15,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
 
-  {/* Animated gold dots */}
-  <motion.div
-    className="absolute left-0 top-12 h-72 w-56"
-    style={{
-      backgroundImage:
-        "radial-gradient(circle, #C9A227 1.8px, transparent 1.8px)",
-      backgroundSize: "30px 30px",
-      maskImage:
-        "linear-gradient(to right, black 10%, transparent 85%)",
-      WebkitMaskImage:
-        "linear-gradient(to right, black 10%, transparent 85%)",
-    }}
-    animate={{
-      opacity: [0.25, 0.7, 0.4, 0.25],
-      y: [0, 12, 0],
-    }}
-    transition={{
-      duration: 10,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  />
+            {/* Animated gold dots */}
+            <motion.div
+              className="absolute left-0 top-12 h-72 w-56"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, #C9A227 1.8px, transparent 1.8px)",
+                backgroundSize: "30px 30px",
+                maskImage:
+                  "linear-gradient(to right, black 10%, transparent 85%)",
+                WebkitMaskImage:
+                  "linear-gradient(to right, black 10%, transparent 85%)",
+              }}
+              animate={{
+                opacity: [0.25, 0.7, 0.4, 0.25],
+                y: [0, 12, 0],
+              }}
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
 
-  {/* Animated navy dots */}
-  <motion.div
-    className="absolute bottom-20 right-0 h-56 w-64"
-    style={{
-      backgroundImage:
-        "radial-gradient(circle, #0B1F3A 1.8px, transparent 1.8px)",
-      backgroundSize: "30px 30px",
-      maskImage:
-        "linear-gradient(to left, black 10%, transparent 85%)",
-      WebkitMaskImage:
-        "linear-gradient(to left, black 10%, transparent 85%)",
-    }}
-    animate={{
-      opacity: [0.18, 0.58, 0.3, 0.18],
-      y: [0, -10, 0],
-    }}
-    transition={{
-      duration: 11,
-      repeat: Infinity,
-      ease: "easeInOut",
-      delay: 2,
-    }}
-  />
+            {/* Animated navy dots */}
+            <motion.div
+              className="absolute bottom-20 right-0 h-56 w-64"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, #0B1F3A 1.8px, transparent 1.8px)",
+                backgroundSize: "30px 30px",
+                maskImage:
+                  "linear-gradient(to left, black 10%, transparent 85%)",
+                WebkitMaskImage:
+                  "linear-gradient(to left, black 10%, transparent 85%)",
+              }}
+              animate={{
+                opacity: [0.18, 0.58, 0.3, 0.18],
+                y: [0, -10, 0],
+              }}
+              transition={{
+                duration: 11,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 2,
+              }}
+            />
 
-  {/* Animated upward financial growth line */}
-  <motion.svg
-    className="absolute right-0 top-[8%] h-[62%] w-[52%]"
-    viewBox="0 0 700 500"
-    preserveAspectRatio="none"
-    animate={{ opacity: [0.25, 0.7, 0.45, 0.25] }}
-    transition={{
-      duration: 10,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  >
-    <motion.path
-      d="M0 420
+            {/* Animated upward financial growth line */}
+            <motion.svg
+              className="absolute right-0 top-[8%] h-[62%] w-[52%]"
+              viewBox="0 0 700 500"
+              preserveAspectRatio="none"
+              animate={{ opacity: [0.25, 0.7, 0.45, 0.25] }}
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <motion.path
+                d="M0 420
          C90 400, 120 370, 185 350
          S285 290, 350 250
          S450 210, 500 130
          S600 55, 700 20"
-      fill="none"
-      stroke="#C9A227"
-      strokeWidth="2.5"
-      initial={{ pathLength: 0, opacity: 0 }}
-      animate={{
-        pathLength: [0, 1, 1],
-        opacity: [0, 1, 0.7],
-      }}
-      transition={{
-        duration: 6,
-        repeat: Infinity,
-        repeatDelay: 4,
-        ease: "easeInOut",
-      }}
-    />
+                fill="none"
+                stroke="#C9A227"
+                strokeWidth="2.5"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{
+                  pathLength: [0, 1, 1],
+                  opacity: [0, 1, 0.7],
+                }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  repeatDelay: 4,
+                  ease: "easeInOut",
+                }}
+              />
 
-    <motion.circle
-      cx="185"
-      cy="350"
-      r="6"
-      fill="#C9A227"
-      animate={{
-        scale: [0.8, 1.4, 0.8],
-        opacity: [0.4, 1, 0.4],
-      }}
-      transition={{
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    />
+              <motion.circle
+                cx="185"
+                cy="350"
+                r="6"
+                fill="#C9A227"
+                animate={{
+                  scale: [0.8, 1.4, 0.8],
+                  opacity: [0.4, 1, 0.4],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
 
-    <motion.circle
-      cx="350"
-      cy="250"
-      r="7"
-      fill="#C9A227"
-      animate={{
-        scale: [0.8, 1.4, 0.8],
-        opacity: [0.4, 1, 0.4],
-      }}
-      transition={{
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut",
-        delay: 0.8,
-      }}
-    />
+              <motion.circle
+                cx="350"
+                cy="250"
+                r="7"
+                fill="#C9A227"
+                animate={{
+                  scale: [0.8, 1.4, 0.8],
+                  opacity: [0.4, 1, 0.4],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.8,
+                }}
+              />
 
-    <motion.circle
-      cx="500"
-      cy="130"
-      r="8"
-      fill="#C9A227"
-      animate={{
-        scale: [0.8, 1.4, 0.8],
-        opacity: [0.4, 1, 0.4],
-      }}
-      transition={{
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut",
-        delay: 1.6,
-      }}
-    />
-  </motion.svg>
+              <motion.circle
+                cx="500"
+                cy="130"
+                r="8"
+                fill="#C9A227"
+                animate={{
+                  scale: [0.8, 1.4, 0.8],
+                  opacity: [0.4, 1, 0.4],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 1.6,
+                }}
+              />
+            </motion.svg>
 
-  {/* Animated flowing lines at bottom */}
-  <motion.svg
-    className="absolute bottom-0 left-0 h-[48%] w-full"
-    viewBox="0 0 1440 400"
-    preserveAspectRatio="none"
-    animate={{ y: [0, -8, 0] }}
-    transition={{
-      duration: 9,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  >
-    {[0, 22, 44, 66, 88, 110].map((offset, index) => (
-      <motion.path
-        key={offset}
-        d={`M0 ${290 + offset}
+            {/* Animated flowing lines at bottom */}
+            <motion.svg
+              className="absolute bottom-0 left-0 h-[48%] w-full"
+              viewBox="0 0 1440 400"
+              preserveAspectRatio="none"
+              animate={{ y: [0, -8, 0] }}
+              transition={{
+                duration: 9,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              {[0, 22, 44, 66, 88, 110].map((offset, index) => (
+                <motion.path
+                  key={offset}
+                  d={`M0 ${290 + offset}
           C160 ${370 + offset}, 270 ${120 + offset}, 440 ${245 + offset}
           S690 ${380 + offset}, 850 ${210 + offset}
           S1120 ${390 + offset}, 1440 ${230 + offset}`}
-        fill="none"
-        stroke={offset % 44 === 0 ? "#0B1F3A" : "#C9A227"}
-        strokeWidth="1.4"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{
-          pathLength: [0, 1],
-          opacity: [0, 0.42],
-        }}
-        transition={{
-          duration: 4 + index * 0.5,
-          delay: index * 0.2,
-          ease: "easeOut",
-        }}
-      />
-    ))}
-  </motion.svg>
-</div>
+                  fill="none"
+                  stroke={offset % 44 === 0 ? "#0B1F3A" : "#C9A227"}
+                  strokeWidth="1.4"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{
+                    pathLength: [0, 1],
+                    opacity: [0, 0.42],
+                  }}
+                  transition={{
+                    duration: 4 + index * 0.5,
+                    delay: index * 0.2,
+                    ease: "easeOut",
+                  }}
+                />
+              ))}
+            </motion.svg>
+          </div>
           {/* signature element: a faint hand-drawn growth curve */}
           <svg
             aria-hidden
@@ -1030,7 +1028,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
               <ShieldCheck className="size-5 text-accent" />
               AMFI-registered mutual fund distributor
             </motion.p>
-             
+
 
             <motion.div
               className="font-display mt-8 max-w-2xl text-2xl italic leading-snug text-primary sm:text-3xl"
@@ -1038,10 +1036,10 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 2.15, duration: 0.7 }}
             >
-      <p className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">
-  Your money needs a <span className="text-accent not-italic">plan</span> not just a product.
-</p>
-             
+              <p className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+                Your money needs a <span className="text-accent not-italic">plan</span> not just a product.
+              </p>
+
             </motion.div>
 
             <motion.p
@@ -1150,60 +1148,69 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
             </p>
           </motion.div>
           <motion.div
-  variants={fadeUp}
-  initial="hidden"
-  whileInView="show"
-  viewport={{ once: true, amount: 0.2 }}
-  role="button"
-  tabIndex={0}
-  aria-haspopup="dialog"
-  onClick={() => setEthicalModalOpen(true)}
-  onKeyDown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      setEthicalModalOpen(true)
-    }
-  }}
-  className="mt-10 cursor-pointer rounded-2xl border border-accent/30 bg-accent/10 p-5 outline-none transition-all duration-300 hover:border-accent/50 hover:bg-accent/[0.14] hover:shadow-md hover:shadow-accent/10 focus-visible:ring-2 focus-visible:ring-accent/40 active:scale-[0.995]"
->
-  <div className="inline-flex items-center gap-3 rounded-xl bg-green-50 px-4 py-3">
-  <Leaf className="size-6 text-green-600" />
-  <p className="text-sm font-bold uppercase tracking-[0.18em] text-green-700">
-    Ethical Investing Focus
-  </p>
-</div>
-
-  <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-    We help clients explore ESG and ethical mutual fund opportunities that
-    align with their values while pursuing long-term wealth creation.
-  </p>
-</motion.div> 
-
-          <motion.div
-            variants={staggerParent}
+            variants={fadeUp}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.2 }}
-            className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+            role="button"
+            tabIndex={0}
+            aria-haspopup="dialog"
+            onClick={() => setEthicalModalOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setEthicalModalOpen(true)
+              }
+            }}
+            className="mt-10 cursor-pointer rounded-2xl border border-accent/30 bg-accent/10 p-5 outline-none transition-all duration-300 hover:border-accent/50 hover:bg-accent/[0.14] hover:shadow-md hover:shadow-accent/10 focus-visible:ring-2 focus-visible:ring-accent/40 active:scale-[0.995]"
+          >
+            <div className="inline-flex items-center gap-3 rounded-xl bg-green-50 px-4 py-3">
+              <Leaf className="size-6 text-green-600" />
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-green-700">
+                Ethical Investing Focus
+              </p>
+            </div>
+
+            <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
+              We help clients explore ESG and ethical mutual fund opportunities that
+              align with their values while pursuing long-term wealth creation.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            className="mt-14 grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-4"
           >
             {services.map(({ icon: Icon, title, short, text, details }) => {
               const isServiceExpanded = !!expandedServiceCards[short]
               const detailsId = `service-details-${short}`
+
               return (
                 <motion.article
                   key={short}
                   variants={fadeUp}
-                  className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card p-7 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-2xl hover:shadow-primary/[0.08]"
+                  className="group relative flex min-h-[406px] self-start flex-col overflow-hidden rounded-3xl border border-border bg-card p-7 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-2xl hover:shadow-primary/[0.08]"
                 >
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.05] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
                   <div className="relative flex size-12 items-center justify-center rounded-xl bg-accent/15 text-accent transition-transform duration-500 group-hover:scale-110">
                     <Icon className="size-6" />
                   </div>
+
                   <p className="relative mt-7 text-xs font-bold uppercase tracking-[0.2em] text-accent">
                     {short}
                   </p>
-                  <h3 className="relative mt-2 text-xl font-bold text-primary">{title}</h3>
-                  <p className="relative mt-4 leading-7 text-muted-foreground">{text}</p>
+
+                  <h3 className="relative mt-2 text-xl font-bold text-primary">
+                    {title}
+                  </h3>
+
+                  <p className="relative mt-4 leading-7 text-muted-foreground">
+                    {text}
+                  </p>
+
                   <button
                     type="button"
                     onClick={() => toggleServiceCard(short)}
@@ -1212,10 +1219,15 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                     className="relative mt-auto inline-flex items-center gap-2 pt-7 text-sm font-bold text-primary transition-colors group-hover:text-accent"
                   >
                     {isServiceExpanded ? 'Show less' : 'Learn more'}
+
                     <ChevronDown
-                      className={`size-4 transition-transform duration-300 ${isServiceExpanded ? 'rotate-180' : 'group-hover:translate-y-0.5'}`}
+                      className={`size-4 transition-transform duration-300 ${isServiceExpanded
+                        ? 'rotate-180'
+                        : 'group-hover:translate-y-0.5'
+                        }`}
                     />
                   </button>
+
                   <AnimatePresence initial={false}>
                     {isServiceExpanded && (
                       <motion.div
@@ -1345,9 +1357,8 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                     <button
                       key={horizon}
                       onClick={() => setComparisonYears(horizon)}
-                      className={`ft-timeline-btn relative z-10 rounded-full px-5 py-2.5 text-sm font-bold ${
-                        comparisonYears === horizon ? 'text-accent-foreground' : 'text-primary/60 hover:text-primary'
-                      }`}
+                      className={`ft-timeline-btn relative z-10 rounded-full px-5 py-2.5 text-sm font-bold ${comparisonYears === horizon ? 'text-accent-foreground' : 'text-primary/60 hover:text-primary'
+                        }`}
                     >
                       {comparisonYears === horizon && (
                         <motion.span
@@ -1387,9 +1398,8 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                     <button
                       key={tab.key}
                       onClick={() => setCompareTab(tab.key as typeof compareTab)}
-                      className={`relative z-10 rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-300 ${
-                        compareTab === tab.key ? 'text-accent-foreground' : 'text-primary/70 hover:text-primary'
-                      }`}
+                      className={`relative z-10 rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-300 ${compareTab === tab.key ? 'text-accent-foreground' : 'text-primary/70 hover:text-primary'
+                        }`}
                     >
                       {compareTab === tab.key && (
                         <motion.span
@@ -1615,40 +1625,40 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
               whileInView="show"
               viewport={{ once: true, amount: 0.4 }}
             >
-             <div className="mx-auto max-w-4xl text-center">
-  <p className="text-sm font-bold uppercase tracking-[0.25em] text-accent">
-    Why Choose Us
-  </p>
+              <div className="mx-auto max-w-4xl text-center">
+                <p className="text-sm font-bold uppercase tracking-[0.25em] text-accent">
+                  Why Choose Us
+                </p>
 
-  <h2 className="font-display mt-5 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-    A partner for the{" "}
-    <span className="text-accent">long view.</span>
-  </h2>
+                <h2 className="font-display mt-5 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+                  A partner for the{" "}
+                  <span className="text-accent">long view.</span>
+                </h2>
 
-  <p className="mx-auto mt-8 max-w-3xl text-lg leading-9 text-primary-foreground/75">
-    We combine expert knowledge, proven strategies, and personalized service
-    to help you achieve your financial aspirations with confidence through
-    disciplined, long-term investing.
-  </p>
-</div>
+                <p className="mx-auto mt-8 max-w-3xl text-lg leading-9 text-primary-foreground/75">
+                  We combine expert knowledge, proven strategies, and personalized service
+                  to help you achieve your financial aspirations with confidence through
+                  disciplined, long-term investing.
+                </p>
+              </div>
               <ul className="mt-9 flex flex-col gap-4">
-  {reasons.map((reason) => (
-    <li key={reason.title} className="flex items-start gap-3 text-base">
-      <span className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border border-accent text-accent">
-        <Check className="size-3.5" />
-      </span>
+                {reasons.map((reason) => (
+                  <li key={reason.title} className="flex items-start gap-3 text-base">
+                    <span className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border border-accent text-accent">
+                      <Check className="size-3.5" />
+                    </span>
 
-      <div>
-        <span className="font-semibold text-primary-foreground">
-          {reason.title}
-        </span>
-        <span className="text-primary-foreground/70">
-          {" — "}{reason.description}
-        </span>
-      </div>
-    </li>
-  ))}
-</ul>
+                    <div>
+                      <span className="font-semibold text-primary-foreground">
+                        {reason.title}
+                      </span>
+                      <span className="text-primary-foreground/70">
+                        {" — "}{reason.description}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </motion.div>
           </div>
         </section>
@@ -1697,25 +1707,25 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                       </>
                     }
                   />
-                 <ContactItem
-  icon={Mail}
-  label="Email us"
-  text="finthreecapital@gmail.com"
-/>
+                  <ContactItem
+                    icon={Mail}
+                    label="Email us"
+                    text="finthreecapital@gmail.com"
+                  />
 
-<ContactItem
-  icon={Phone}
-  label="Call us"
-  text={
-    <>
-      +91 9621692197
-      <br />
-      +91 9560632786
-      <br />
-      +91 9927989881
-    </>
-  }
-/>
+                  <ContactItem
+                    icon={Phone}
+                    label="Call us"
+                    text={
+                      <>
+                        +91 9621692197
+                        <br />
+                        +91 9560632786
+                        <br />
+                        +91 9927989881
+                      </>
+                    }
+                  />
                 </div>
               </motion.div>
 
@@ -1853,7 +1863,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         </div>
       </footer>
 
-<a
+      <a
         href="https://wa.me/919621692197"
         target="_blank"
         rel="noreferrer"
@@ -2077,11 +2087,10 @@ function AskFinthreeChat({
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
-                      message.role === 'user'
-                        ? 'rounded-br-sm bg-accent text-accent-foreground'
-                        : 'rounded-bl-sm bg-secondary/60 text-primary'
-                    }`}
+                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-6 ${message.role === 'user'
+                      ? 'rounded-br-sm bg-accent text-accent-foreground'
+                      : 'rounded-bl-sm bg-secondary/60 text-primary'
+                      }`}
                   >
                     <p>{message.text}</p>
                     {message.cta === 'calculator' && (
@@ -2281,16 +2290,14 @@ function ResultCard({
 }) {
   return (
     <div
-      className={`min-w-0 rounded-2xl border p-4 transition-all duration-300 sm:p-6 ${
-        highlight
-          ? 'border-accent/30 bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-          : 'border-border bg-secondary/40 text-primary hover:border-accent/30'
-      }`}
+      className={`min-w-0 rounded-2xl border p-4 transition-all duration-300 sm:p-6 ${highlight
+        ? 'border-accent/30 bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+        : 'border-border bg-secondary/40 text-primary hover:border-accent/30'
+        }`}
     >
       <p
-        className={`text-xs font-bold uppercase tracking-[0.16em] ${
-          highlight ? 'text-accent' : 'text-muted-foreground'
-        }`}
+        className={`text-xs font-bold uppercase tracking-[0.16em] ${highlight ? 'text-accent' : 'text-muted-foreground'
+          }`}
       >
         {label}
       </p>
